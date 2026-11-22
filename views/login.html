@@ -7,9 +7,6 @@
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <meta name="theme-color" content="{{.Site.ThemeColor}}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
@@ -27,8 +24,10 @@
   <div class="app">
     <header class="appbar">
       <div class="appbar-inner">
-        <a class="wordmark" href="/">{{icon "rocket" 16 ""}}{{.Site.Name}}</a>
-        <span class="tag" style="font-family:var(--font-mono);font-size:11px;color:var(--faint)">admin</span>
+        <a class="wordmark" href="/"><span class="wordmark-mark" aria-hidden="true">W</span>{{.Site.Name}}</a>
+        <div class="appbar-side">
+          <span class="tag">admin</span>
+        </div>
       </div>
     </header>
 
