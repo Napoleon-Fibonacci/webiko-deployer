@@ -70,7 +70,8 @@ sesuai nomor urut. Migrasi aman diulang.
 ## Alur deploy
 
 1. Nama divalidasi lokal (3–40 huruf kecil/angka/hyphen) lalu dicek ke database
-   dan DNS `*.vercel.app`.
+   dan DNS `*.vercel.app`. Kalau Vercel tetap memberi host dengan suffix,
+   deploy dibatalkan dan pengunjung diminta memilih nama lain.
 2. Sumber ZIP/folder/ditempel dibungkus jadi satu ZIP di browser (fflate),
    lalu diunggah langsung ke Vercel Blob memakai token client. Ini yang membuat
    ZIP sampai 10 MB bisa lewat, di atas batas body request function Vercel.

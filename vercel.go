@@ -140,7 +140,7 @@ func createDeployment(name string, files []DeployFile) (CreateDeploymentResult, 
 		ProjectID:    final.ProjectID,
 		DeploymentID: final.ID,
 		URL:          publicURL,
-		Renamed:      !strings.HasPrefix(publicURL, "https://"+name+".vercel.app"),
+		Renamed:      publicURL != "https://"+name+".vercel.app",
 	}, nil
 }
 

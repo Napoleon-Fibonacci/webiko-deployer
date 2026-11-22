@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 )
@@ -83,6 +84,12 @@ func handleDeploy(w http.ResponseWriter, r *http.Request) {
 		finish(err)
 		return
 	}
+	// Re-check on the server: the browser may skip /api/check-name, and a
+	// taken name must fail before a slot or an old project is touched.
+	if vercelNameTaken(name) {
+		finish(newNameTaken())
+		return
+	}
 	if err = enforceRateLimit("deploy", getClientIP(r)); err != nil {
 		finish(err)
 		return
@@ -127,6 +134,16 @@ func handleDeploy(w http.ResponseWriter, r *http.Request) {
 	result, err := createDeployment(name, files)
 	if err != nil {
 		finish(err)
+		return
+	}
+	// Vercel may give a suffixed host when the exact name is taken. Reject it
+	// instead of handing out a confusing URL: delete the temporary project and
+	// ask the visitor to pick another name.
+	if result.Renamed {
+		if deleteErr := deleteVercelProject(result.ProjectID); deleteErr != nil {
+			log.Printf("cleanup rejected project %s: %v", result.ProjectID, deleteErr)
+		}
+		finish(newNameTaken())
 		return
 	}
 	if err = markActive(rowID, result.ProjectID, result.URL); err != nil {
