@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="{{.Site.Lang}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin — {{.Site.Name}}</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="{{.Site.ThemeColor}}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <div aria-hidden="true" class="bg-grid"></div>
+
+  <div aria-hidden="true" class="side-icons">
+    <span class="side-ico" style="left:5%;top:16%;animation-duration:9s;animation-delay:-1s">{{icon "rocket" 30 ""}}</span>
+    <span class="side-ico is-alt" style="left:11%;top:44%;animation-duration:11s;animation-delay:-4.5s">{{icon "archive" 24 ""}}</span>
+    <span class="side-ico" style="left:4%;top:71%;animation-duration:10s;animation-delay:-7s">{{icon "code" 22 ""}}</span>
+    <span class="side-ico is-alt" style="right:6%;top:21%;animation-duration:12s;animation-delay:-2.5s">{{icon "github" 26 ""}}</span>
+    <span class="side-ico" style="right:10%;top:49%;animation-duration:9.5s;animation-delay:-5s">{{icon "upload" 28 ""}}</span>
+    <span class="side-ico is-alt" style="right:5%;top:74%;animation-duration:10.5s;animation-delay:-8s">{{icon "globe" 22 ""}}</span>
+  </div>
+
+  <div class="app">
+    <header class="appbar">
+      <div class="appbar-inner appbar-wide">
+        <a class="wordmark" href="/">{{icon "rocket" 16 ""}}{{.Site.Name}}</a>
+        <div class="appbar-side">
+          <span class="tag">admin</span>
+          <form action="/api/admin/logout" method="post">
+            <button class="btn-ghost" type="submit">{{icon "x" 15 ""}} Keluar</button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <main class="admin-main">
+      <div class="admin">
+        <header class="admin-head reveal">
+          <div>
+            <h1 class="stack-title">Deployan</h1>
+            <p class="lead">Semua deploy yang tercatat di database.</p>
+          </div>
+          <div class="admin-actions">
+            <span class="admin-total">{{if .AdminError}}—{{else}}{{.Total}} baris{{end}}</span>
+            <form action="/api/admin/sweep" method="post">
+              <button class="btn-ghost" type="submit">{{icon "refresh" 15 ""}} Bersihkan</button>
+            </form>
+          </div>
+        </header>
+
+        {{if .Flash}}
+          <p class="flash pop" data-tone="{{.Flash.Tone}}" role="status">
+            {{if eq .Flash.Tone "ok"}}{{icon "check" 14 ""}}{{else}}{{icon "alert" 14 ""}}{{end}}{{.Flash.Text}}
+          </p>
+        {{end}}
+
+        {{if .AdminError}}
+          <p class="admin-empty">Database belum siap. Coba lagi sebentar.</p>
+        {{else}}
+          <nav class="stats" aria-label="Filter status">
+            <a class="stat row-in" aria-current="{{if eq .Status ""}}true{{else}}false{{end}}" href="/admin{{if .Query}}?q={{urlquery .Query}}{{end}}">
+              <span class="stat-count">{{.Total}}</span>
+              <span class="stat-label">Semua</span>
+            </a>
+            {{range $i, $stat := .Stats}}{{if $stat.Key}}
+              <a class="stat row-in" style="--d:{{add 40 (mul $i 45)}}ms" aria-current="{{if eq $.Status $stat.Key}}true{{else}}false{{end}}" href="/admin?status={{$stat.Key}}{{if $.Query}}&amp;q={{urlquery $.Query}}{{end}}">
+                <span class="stat-count">{{$stat.Count}}</span>
+                <span class="stat-label">{{$stat.Label}}</span>
+              </a>
+            {{end}}{{end}}
+          </nav>
+
+          <form class="admin-search reveal" style="--d:300ms" method="get" action="/admin" role="search">
+            {{if .Status}}<input type="hidden" name="status" value="{{.Status}}">{{end}}
+            <div class="input-icon">
+              {{icon "search" 16 ""}}
+              <input class="input" type="search" name="q" value="{{.Query}}" placeholder="Cari nama…" aria-label="Cari nama project">
+            </div>
+            <button class="btn-ghost" type="submit">Cari</button>
+            {{if .Query}}<a class="btn-ghost" href="/admin{{if .Status}}?status={{.Status}}{{end}}">Reset</a>{{end}}
+          </form>
+
+          {{if not .Rows}}
+            <p class="admin-empty">Tidak ada baris yang cocok.</p>
+          {{else}}
+            <div class="admin-table-wrap reveal" style="--d:360ms">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Nama</th>
+                    <th>Status</th>
+                    <th>Sumber</th>
+                    <th>URL</th>
+                    <th>Dibuat</th>
+                    <th>Dihapus</th>
+                    <th><span class="sr-only">Aksi</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {{range $i, $row := .Rows}}
+                    <tr class="row-in" style="--d:{{if lt (mul $i 18) 320}}{{mul $i 18}}{{else}}320{{end}}ms">
+                      <td class="mono">{{$row.Name}}</td>
+                      <td><span class="badge" data-s="{{$row.Status}}">{{statusLabel $row.Status}}</span></td>
+                      <td class="text-muted">{{$row.SourceType}}</td>
+                      <td>
+                        {{if $row.URL.Valid}}
+                          <a class="admin-link" href="{{$row.URL.String}}" target="_blank" rel="noreferrer">{{prettyURL $row.URL.String}}</a>
+                        {{else}}
+                          <span class="text-faint">—</span>
+                        {{end}}
+                      </td>
+                      <td class="text-faint">{{formatLong $row.CreatedAt}}</td>
+                      <td class="text-faint">{{if $row.DeletedAt.Valid}}{{formatLong $row.DeletedAt.Time}}{{else}}—{{end}}</td>
+                      <td class="admin-cell-action">
+                        {{if eq $row.Status "deleted"}}
+                          <span class="text-faint">—</span>
+                        {{else}}
+                          <button class="icon-btn delete-trigger" type="button" data-id="{{$row.ID}}" data-name="{{$row.Name}}" title="Hapus {{$row.Name}}" aria-label="Hapus {{$row.Name}}">{{icon "trash" 15 ""}}</button>
+                        {{end}}
+                      </td>
+                    </tr>
+                  {{end}}
+                </tbody>
+              </table>
+            </div>
+          {{end}}
+
+          {{if gt .Matched (len .Rows)}}
+            <p class="admin-note">Menampilkan {{len .Rows}} terbaru dari {{.Matched}} baris. Persempit dengan filter atau pencarian.</p>
+          {{end}}
+
+          <p class="admin-note">Menghapus di sini ikut menghapus project-nya di Vercel, jadi URL-nya berhenti hidup dan slotnya bebas lagi.</p>
+        {{end}}
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="{{.Site.Lang}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Masuk admin — {{.Site.Name}}</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="{{.Site.ThemeColor}}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <div aria-hidden="true" class="bg-grid"></div>
+
+  <div aria-hidden="true" class="side-icons">
+    <span class="side-ico" style="left:5%;top:16%;animation-duration:9s;animation-delay:-1s">{{icon "rocket" 30 ""}}</span>
+    <span class="side-ico is-alt" style="left:11%;top:44%;animation-duration:11s;animation-delay:-4.5s">{{icon "archive" 24 ""}}</span>
+    <span class="side-ico" style="left:4%;top:71%;animation-duration:10s;animation-delay:-7s">{{icon "code" 22 ""}}</span>
+    <span class="side-ico is-alt" style="right:6%;top:21%;animation-duration:12s;animation-delay:-2.5s">{{icon "github" 26 ""}}</span>
+    <span class="side-ico" style="right:10%;top:49%;animation-duration:9.5s;animation-delay:-5s">{{icon "upload" 28 ""}}</span>
+    <span class="side-ico is-alt" style="right:5%;top:74%;animation-duration:10.5s;animation-delay:-8s">{{icon "globe" 22 ""}}</span>
+  </div>
+
+  <div class="app">
+    <header class="appbar">
+      <div class="appbar-inner">
+        <a class="wordmark" href="/">{{icon "rocket" 16 ""}}{{.Site.Name}}</a>
+        <span class="tag" style="font-family:var(--font-mono);font-size:11px;color:var(--faint)">admin</span>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <section class="admin-login reveal">
+        {{if .Disabled}}
+          <span class="login-mark" aria-hidden="true">{{icon "alert" 20 ""}}</span>
+          <h1 class="stack-title">Admin nonaktif</h1>
+          <p class="lead">Setel <span class="mono" style="font-size:13px">ADMIN_PASSWORD</span> di server untuk mengaktifkan menu admin.</p>
+          <p class="login-foot"><a class="admin-link" href="/">Kembali ke deployer</a></p>
+        {{else}}
+          <span class="login-mark" aria-hidden="true">{{icon "rocket" 20 ""}}</span>
+          <h1 class="stack-title">Masuk admin</h1>
+          <p class="lead">Menu ini hanya untuk pemilik deployer.</p>
+
+          <form action="/api/admin/login" method="post" class="field">
+            <label class="field-label" for="password">Password</label>
+            <input class="input" id="password" name="password" type="password" autocomplete="current-password" required>
+            {{if .Error}}
+              <p class="field-error" role="alert" style="margin-top:8px">
+                {{icon "alert" 14 ""}}
+                {{if eq .Error "off"}}Menu admin belum aktif di server.
+                {{else if eq .Error "limit"}}Terlalu banyak percobaan masuk. Coba lagi nanti.
+                {{else if eq .Error "db"}}Tidak bisa memeriksa batas percobaan masuk. Coba lagi sebentar.
+                {{else}}Password salah.{{end}}
+              </p>
+            {{end}}
+            <div class="login-actions">
+              <button class="btn-primary login-submit" type="submit">Masuk</button>
+            </div>
+          </form>
+
+          <p class="login-foot">Sesi bertahan {{.SessionTime}} jam setelah masuk. <a class="admin-link" href="/">Kembali ke deployer</a></p>
+        {{end}}
+      </section>
+    </main>
+  </div>
+</body>
+</html>

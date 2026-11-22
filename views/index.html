@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="{{.Site.Lang}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Site.Title}}</title>
+  <meta name="description" content="{{.Site.Description}}">
+  <meta name="keywords" content="{{range $i, $k := .Site.Keywords}}{{if $i}}, {{end}}{{$k}}{{end}}">
+  <meta name="application-name" content="{{.Site.Name}}">
+  <meta name="creator" content="{{.Site.Name}}">
+  <meta name="publisher" content="{{.Site.Name}}">
+  <meta name="category" content="developer tools">
+  <meta name="format-detection" content="telephone=no, address=no, email=no">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+  <link rel="canonical" href="{{.Site.URL}}/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{.Site.Name}}">
+  <meta property="og:locale" content="{{.Site.Locale}}">
+  <meta property="og:title" content="{{.Site.Title}}">
+  <meta property="og:description" content="{{.Site.Description}}">
+  <meta property="og:url" content="{{.Site.URL}}/">
+  <meta property="og:image" content="{{.Site.URL}}/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{.Site.Title}}">
+  <meta name="twitter:description" content="{{.Site.Description}}">
+  <meta name="twitter:image" content="{{.Site.URL}}/og.png">
+
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="{{.Site.ThemeColor}}">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css">
+  <script type="application/ld+json">{{.JSONLD}}</script>
+</head>
+<body>
+  <div aria-hidden="true" class="bg-grid"></div>
+
+  <div aria-hidden="true" class="side-icons">
+    <span class="side-ico" style="left:5%;top:16%;animation-duration:9s;animation-delay:-1s">{{icon "rocket" 30 ""}}</span>
+    <span class="side-ico is-alt" style="left:11%;top:44%;animation-duration:11s;animation-delay:-4.5s">{{icon "archive" 24 ""}}</span>
+    <span class="side-ico" style="left:4%;top:71%;animation-duration:10s;animation-delay:-7s">{{icon "code" 22 ""}}</span>
+    <span class="side-ico is-alt" style="right:6%;top:21%;animation-duration:12s;animation-delay:-2.5s">{{icon "github" 26 ""}}</span>
+    <span class="side-ico" style="right:10%;top:49%;animation-duration:9.5s;animation-delay:-5s">{{icon "upload" 28 ""}}</span>
+    <span class="side-ico is-alt" style="right:5%;top:74%;animation-duration:10.5s;animation-delay:-8s">{{icon "globe" 22 ""}}</span>
+  </div>
+
+  <div class="app">
+    <header class="appbar">
+      <div class="appbar-inner">
+        <a class="wordmark" href="/">
+          {{icon "rocket" 16 ""}}
+          {{.Site.Name}}
+        </a>
+        <div class="capacity" style="display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:12px;color:var(--faint)">
+          {{icon "layers" 14 ""}}
+          {{if .HasUsed}}<span><span style="color:var(--muted)">{{.Used}}</span> / {{.Max}} project</span>{{else}}<span>maks {{.Max}} project</span>{{end}}
+        </div>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <div class="stack reveal">
+        <header>
+          <h1 class="stack-title">Deploy situs ke Vercel</h1>
+          <p class="lead">Isi nama, pilih sumber, lalu deploy.</p>
+        </header>
+
+        <section class="pane-main">
+          <form id="deploy-form" novalidate>
+            <div class="field">
+              <label class="field-label" for="project-name">Nama project</label>
+              <div class="name-wrap">
+                <input class="input font-mono" id="project-name" type="text" autocomplete="off" spellcheck="false" placeholder="namaweb" maxlength="40">
+                <span class="name-suffix">.vercel.app</span>
+              </div>
+              <div class="field-hint" id="name-status" aria-live="polite">
+                <span class="text-faint">Huruf kecil, angka, tanda hubung; 3–40 karakter.</span>
+              </div>
+              <p class="field-error shake" id="name-error" role="alert" hidden></p>
+            </div>
+
+            <div class="field">
+              <span class="field-label" id="source-label">Sumber</span>
+              <div role="group" aria-labelledby="source-label">
+                <div class="seg" role="tablist" aria-label="Sumber situs" id="source-tabs" style="--seg-count:3">
+                  <div class="seg-thumb" aria-hidden="true" id="seg-thumb"></div>
+                  <button class="seg-tab" id="tab-github" type="button" role="tab" aria-selected="true" aria-controls="panel-github" tabindex="0">
+                    {{icon "github" 15 ""}}
+                    GitHub
+                  </button>
+                  <button class="seg-tab" id="tab-zip" type="button" role="tab" aria-selected="false" aria-controls="panel-zip" tabindex="-1">
+                    {{icon "archive" 15 ""}}
+                    ZIP
+                  </button>
+                  <button class="seg-tab" id="tab-paste" type="button" role="tab" aria-selected="false" aria-controls="panel-paste" tabindex="-1">
+                    {{icon "code" 15 ""}}
+                    Tempel kode
+                  </button>
+                </div>
+
+                <div class="seg-panel" id="panel-github" role="tabpanel">
+                  <div class="input-icon">
+                    {{icon "github" 16 ""}}
+                    <input class="input font-mono" id="github-url" type="url" placeholder="github.com/user/repo" aria-label="URL repo GitHub">
+                  </div>
+                  <p class="dz-note">Repo publik saja.</p>
+                </div>
+
+                <div class="seg-panel" id="panel-zip" role="tabpanel" hidden>
+                  <div class="dz" id="dropzone" role="button" tabindex="0">
+                    <span class="dz-icon">{{icon "upload" 26 ""}}</span>
+                    <span class="dz-title">Tarik file ZIP, folder, atau satu file HTML ke sini</span>
+                    <span class="dz-sub">atau</span>
+                    <span class="dz-actions">
+                      <button class="btn-ghost" type="button" id="pick-zip">{{icon "archive" 15 ""}} Pilih file ZIP</button>
+                      <button class="btn-ghost" type="button" id="pick-folder">{{icon "folder" 15 ""}} Pilih folder</button>
+                      <button class="btn-ghost" type="button" id="pick-html">{{icon "file" 15 ""}} Pilih file HTML</button>
+                    </span>
+                  </div>
+
+                  <div class="chip" id="pick-chip" hidden>
+                    <span class="chip-badge" id="chip-icon">{{icon "archive" 17 ""}}</span>
+                    <span class="chip-text">
+                      <span class="chip-name" id="chip-name"></span>
+                      <span class="chip-size" id="chip-size"></span>
+                    </span>
+                    <button class="icon-btn" type="button" id="chip-clear" aria-label="Ganti pilihan file">{{icon "x" 16 ""}}</button>
+                  </div>
+
+                  <input type="file" id="input-zip" accept=".zip,application/zip,application/x-zip-compressed" hidden>
+                  <input type="file" id="input-folder" multiple hidden>
+                  <input type="file" id="input-html" accept=".html,.htm,text/html" hidden>
+
+                  <p class="dz-note">Maksimal 10 MB dan 100 file. Wajib ada index.html di root; satu file HTML tunggal otomatis jadi index.html.</p>
+                </div>
+
+                <div class="seg-panel" id="panel-paste" role="tabpanel" hidden>
+                  <textarea class="code-input" id="code-input" spellcheck="false" placeholder="&lt;!doctype html&gt;&#10;&lt;html lang=&quot;id&quot;&gt;&#10;  &lt;head&gt;&#10;    &lt;meta charset=&quot;utf-8&quot; /&gt;&#10;    &lt;title&gt;Halo&lt;/title&gt;&#10;  &lt;/head&gt;&#10;  &lt;body&gt;&#10;    &lt;h1&gt;Halo&lt;/h1&gt;&#10;  &lt;/body&gt;&#10;&lt;/html&gt;"></textarea>
+                  <p class="dz-note">Kode disimpan sebagai index.html. CSS dan JS taruh inline di dalamnya.</p>
+                </div>
+              </div>
+              <p class="field-error shake" id="source-error" role="alert" hidden></p>
+            </div>
+          </form>
+
+          <div id="preview-slot"></div>
+        </section>
+
+        <div class="actionbar">
+          <div class="actionbar-status">
+            <div class="actionbar-status" id="action-idle">
+              <span class="status-dot" id="status-dot" aria-hidden="true"></span>
+              <span class="text-muted" id="idle-hint">Isi nama project</span>
+            </div>
+            <ol class="rail" id="action-rail" aria-label="Progres deploy" hidden>
+              <li class="rail-step" data-state="active"><span class="rail-dot" aria-hidden="true"></span><span class="rail-label">Menyiapkan file</span></li>
+              <li class="rail-step" data-state="todo"><span class="rail-dot" aria-hidden="true"></span><span class="rail-label">Membuat project</span></li>
+              <li class="rail-step" data-state="todo"><span class="rail-dot" aria-hidden="true"></span><span class="rail-label">Selesai</span></li>
+            </ol>
+            <div class="success-line" id="action-success" hidden>
+              <span id="success-icon" style="color:var(--ok)">{{icon "check" 16 "check-draw"}}</span>
+              <span class="success-warn" id="success-warn" hidden>Nama dipakai, alamat: </span>
+              <a class="success-link" id="success-link" href="#" target="_blank" rel="noreferrer">
+                <span id="success-url"></span>
+                {{icon "external" 13 "text-faint"}}
+              </a>
+            </div>
+          </div>
+
+          <div class="success-actions">
+            <button class="btn-primary" type="submit" form="deploy-form" id="deploy-btn" disabled>
+              {{icon "rocket" 16 ""}}
+              Deploy
+            </button>
+            <div class="success-actions" id="success-actions" hidden>
+              <button class="btn-ghost" type="button" id="copy-btn">{{icon "copy" 15 ""}}<span id="copy-label">Salin link</span></button>
+              <button class="btn-ghost text-muted" type="button" id="again-btn">{{icon "refresh" 15 ""}} Deploy lagi</button>
+            </div>
+          </div>
+        </div>
+
+        <aside class="pane-side">
+          <div class="pane-side-head">
+            <h2>{{icon "globe" 14 "text-faint"}} Sedang hidup</h2>
+            <span>20 terbaru</span>
+          </div>
+          {{if not .Rows}}
+            <p class="pane-side-empty">Belum ada yang hidup.</p>
+          {{else}}
+            <ul>
+              {{range $i, $row := .Rows}}
+                <li class="ledger-row row-in" style="--d:{{if lt (mul $i 30) 300}}{{mul $i 30}}{{else}}300{{end}}ms">
+                  <span class="ledger-name">{{mask $row.Name}}<span>.vercel.app</span></span>
+                  <time>{{formatShort $row.CreatedAt}}</time>
+                </li>
+              {{end}}
+            </ul>
+          {{end}}
+          <p class="pane-side-note">Nama disamarkan — dua huruf pertama saja — karena halaman ini publik. Saat kapasitas penuh, project tertua dihapus otomatis sebelum deploy baru.</p>
+        </aside>
+
+        <section class="guide">
+          <h2 class="guide-title">{{icon "rocket" 14 "text-faint"}} Belum pernah bikin web? Mulai dari sini</h2>
+          <ol class="guide-list">
+            <li><strong>Belum punya kodenya? Minta ke AI.</strong> Buka ChatGPT, Gemini, Claude, atau apa pun yang biasa kau pakai — semuanya boleh, yang gratis juga cukup. Tak perlu daftar ke mana-mana, tak perlu paham kodenya.</li>
+            <li>Tempel perintah di bawah. Ganti bagian dalam tanda kurung siku dengan maumu — mau web undangan, portofolio, menu jualan, apa saja.</li>
+            <li>AI-nya menjawab dengan satu blok kode. Salin semuanya, lalu tempel di kolom <em>Tempel kode</em> di atas — atau simpan jadi berkas <code>index.html</code> lalu unggah lewat tab <em>ZIP</em>.</li>
+            <li>Sudah punya kodenya di GitHub, atau berkasnya banyak? Pakai tab <em>GitHub</em> atau <em>ZIP</em>. Tiga jalan itu ujungnya sama.</li>
+            <li>Tekan <strong>Deploy</strong>, tunggu sebentar, dapat link. Tinggal disebar.</li>
+          </ol>
+
+          <div class="guide-prompt">
+            <div class="guide-prompt-head">
+              <span>Perintah siap tempel</span>
+              <button class="btn-ghost" type="button" id="guide-copy">{{icon "copy" 15 ""}}<span id="guide-copy-label">Salin</span></button>
+            </div>
+            <pre class="guide-prompt-body" id="guide-prompt-body">Buatkan saya satu halaman web lengkap dalam SATU berkas HTML. CSS dan JavaScript ditulis di dalam berkas yang sama, tanpa berkas lain dan tanpa pemasangan apa pun.
+
+Isi halamannya: [tulis maumu di sini, contoh: profil singkat saya berisi nama, satu paragraf tentang saya, tiga tautan sosial, dan tombol WhatsApp].
+
+Syaratnya:
+- Rapi di layar HP dan tetap enak dilihat di laptop.
+- Gaya gelap minimalis, kalem, tanpa efek berkilau.
+- Tanpa layanan luar yang butuh kunci API atau berlangganan.
+- Semua gambar dari kode saja, jangan ambil dari internet.
+
+Cukup berikan kodenya saja.</pre>
+          </div>
+
+          <p class="guide-note">Jawaban AI-nya bertele-tele? Bilang saja &ldquo;kodenya saja&rdquo;. Hasilnya berupa beberapa berkas terpisah? Bilang &ldquo;gabung semua jadi satu berkas HTML&rdquo;. Dan kalau kodenya bilang butuh kunci API, kunci rahasia, atau langganan berbayar — minta diganti dengan yang bisa jalan sendiri, karena yang bisa di-deploy di sini cuma berkas biasa.</p>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/vendor/fflate.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>
