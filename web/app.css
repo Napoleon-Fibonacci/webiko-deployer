@@ -1,7 +1,7 @@
 /* ============================================================
    Webiko Deployer — web/app.css
    Gaya mengikuti Webiko Design System:
-   neo-brutalist "indigo pop". Vanilla CSS, tanpa build step.
+   neo-brutalist monokrom: kertas, tinta, dan kuning. Vanilla CSS, tanpa build step.
 
    1. Token (tema gelap tunggal, latar #191919)
    2. Reset & base
@@ -20,14 +20,14 @@
 :root {
   color-scheme: dark;
 
-  --color-primary: #7e7bf0;
-  --color-primary-hover: #6765ec;
-  --color-primary-active: #5352e6;
-  --color-primary-soft: #86a5f5;
+  --color-primary: #f2efe6;
+  --color-primary-hover: #ffffff;
+  --color-primary-active: #d9d5ca;
+  --color-primary-soft: #c9c4b8;
 
-  --color-secondary: #374d90;
-  --color-secondary-hover: #3d56a2;
-  --color-secondary-active: #405aa7;
+  --color-secondary: #343434;
+  --color-secondary-hover: #3d3d3d;
+  --color-secondary-active: #474747;
 
   --color-accent: #ffe14d;
   --color-accent-hover: #ffe97a;
@@ -38,31 +38,31 @@
   --color-pink: #ffb7c5;
 
   --color-background: #191919;
-  --color-surface: #22222b;
-  --color-surface-soft: #2b2b37;
-  --color-surface-raised: #324376;
-  --color-ink: #f1efff;
-  --color-ink-inverse: #12142d;
-  --color-on-accent: #1f1a33;
-  --color-border: #889ddc;
-  --color-border-muted: #3a3a49;
-  --color-disabled-bg: #2a2a35;
+  --color-surface: #222222;
+  --color-surface-soft: #2b2b2b;
+  --color-surface-raised: #f2efe6;
+  --color-ink: #f2efe6;
+  --color-ink-inverse: #191919;
+  --color-on-accent: #191919;
+  --color-border: #f2efe6;
+  --color-border-muted: #403d37;
+  --color-disabled-bg: #303030;
 
-  --color-muted: #b4b5ea;
-  --color-accent-text: #c8c6ff;
-  --color-placeholder: #a9aae4;
+  --color-muted: #b8b3a8;
+  --color-accent-text: #f2efe6;
+  --color-placeholder: #928d82;
 
-  --color-error: #ff9aae;
-  --color-error-bg: #47152a;
-  --color-success: #7de0af;
-  --color-success-bg: #0b3021;
-  --color-warning: #f0d264;
-  --color-warning-bg: #3a2c06;
-  --color-info: #b9b3ff;
-  --color-info-bg: #233056;
+  --color-error: #ffb3c1;
+  --color-error-bg: #471a24;
+  --color-success: #9fe8c3;
+  --color-success-bg: #0d3322;
+  --color-warning: #ffe14d;
+  --color-warning-bg: #3a2f0a;
+  --color-info: #f2efe6;
+  --color-info-bg: #2b2b2b;
 
-  --color-shadow: #495c95;
-  --color-shadow-accent: #7090ef;
+  --color-shadow: #7c776c;
+  --color-shadow-accent: #f2efe6;
 
   --font-sans: "Segoe UI Web", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -119,11 +119,11 @@
   --tap-target: 44px;
   --navbar-h: 64px;
 
-  --color-code-bg: #121a31;
-  --color-code-bar: #1b2746;
-  --color-code-ink: #f1f4ff;
-  --color-code-muted: #a6b5dd;
-  --color-code-tag: #86a5f5;
+  --color-code-bg: #111111;
+  --color-code-bar: #1c1c1c;
+  --color-code-ink: #f2efe6;
+  --color-code-muted: #a39e92;
+  --color-code-tag: #f2efe6;
   --color-code-attr: #ffe14d;
   --color-code-string: #a8f0d0;
 
@@ -211,14 +211,14 @@ button {
 }
 
 a {
-  color: var(--color-accent-text);
+  color: var(--color-ink);
   text-decoration-thickness: 2px;
   text-underline-offset: 3px;
   transition: color var(--dur-base) var(--ease-out);
 }
 
 a:hover {
-  color: var(--color-primary);
+  color: var(--color-accent);
 }
 
 h1,
@@ -344,7 +344,7 @@ ul {
   position: sticky;
   top: 0;
   z-index: 40;
-  border-bottom: var(--border-w) solid var(--color-border);
+  border-bottom: var(--border-w) solid var(--color-ink-inverse);
   background-color: var(--color-surface-raised);
 }
 
@@ -448,6 +448,49 @@ ul {
   text-transform: uppercase;
 }
 
+/* Navbar adalah satu-satunya bidang terang. Teks dan bingkai di dalamnya
+   dibalik supaya tetap terbaca di atas kertas. */
+.appbar .wordmark,
+.appbar .wordmark:hover {
+  color: var(--color-ink-inverse);
+}
+
+.appbar .wordmark-mark {
+  border-color: var(--color-ink-inverse);
+  box-shadow: 3px 3px 0 0 var(--color-ink-inverse);
+}
+
+.appbar .capacity {
+  border-color: var(--color-ink-inverse);
+  background-color: transparent;
+  color: #4d483f;
+  box-shadow: none;
+}
+
+.appbar .capacity svg,
+.appbar .capacity strong,
+.appbar .capacity b {
+  color: var(--color-ink-inverse);
+}
+
+.appbar .tag {
+  border-color: var(--color-ink-inverse);
+  background-color: transparent;
+  color: var(--color-ink-inverse);
+}
+
+.appbar .btn-ghost {
+  border-color: var(--color-ink-inverse);
+  background-color: transparent;
+  color: var(--color-ink-inverse);
+  box-shadow: 3px 3px 0 0 var(--color-ink-inverse);
+}
+
+.appbar .btn-ghost:hover {
+  background-color: var(--color-accent);
+  color: var(--color-ink-inverse);
+}
+
 /* --- Isi halaman --- */
 
 .app-main {
@@ -481,7 +524,7 @@ ul {
 
 .label {
   display: inline-block;
-  color: var(--color-accent-text);
+  color: var(--color-accent);
   font-size: var(--fs-label);
   font-weight: var(--fw-black);
   line-height: var(--lh-small);
@@ -1066,11 +1109,11 @@ ul {
 }
 
 .rail-step[data-state="done"] .rail-label {
-  color: var(--color-accent-text);
+  color: var(--color-muted);
 }
 
 .rail-step[data-state="active"] .rail-label {
-  color: var(--color-ink);
+  color: var(--color-accent);
 }
 
 @keyframes dot-pulse {
@@ -1101,7 +1144,7 @@ ul {
   font-size: 0.8125rem;
   font-weight: var(--fw-bold);
   text-decoration: underline;
-  text-decoration-color: var(--color-accent-text);
+  text-decoration-color: var(--color-accent);
   text-decoration-thickness: 3px;
   text-underline-offset: 4px;
 }
@@ -1577,14 +1620,14 @@ ul {
   color: var(--color-ink);
   font-weight: var(--fw-bold);
   text-decoration: underline;
-  text-decoration-color: var(--color-secondary-active);
+  text-decoration-color: var(--color-border-muted);
   text-decoration-thickness: 2px;
   text-underline-offset: 3px;
 }
 
 .admin-link:hover {
-  color: var(--color-accent-text);
-  text-decoration-color: var(--color-accent-text);
+  color: var(--color-accent);
+  text-decoration-color: var(--color-accent);
 }
 
 .badge {
