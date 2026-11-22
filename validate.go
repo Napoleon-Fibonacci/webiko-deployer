@@ -8,18 +8,12 @@ import (
 )
 
 const (
-	maxNameLength        = 40
-	minNameLength        = 3
-	maxFiles             = 100
-	maxZipBytes          = 10 * 1024 * 1024 // 10 MB per ZIP
-	maxExtractedBytes    = 50 * 1024 * 1024 // 50 MB, anti zip bomb
-	zipOnlyMessage       = "Sumber ZIP harus berformat .zip."
-	nameRuleText         = "Huruf kecil, angka, tanda hubung; 3–40 karakter."
-	zipAccept            = ".zip,application/zip,application/x-zip-compressed"
-	htmlAccept           = ".html,.htm,text/html"
-	blobHostSuffix       = ".vercel-storage.com"
-	vercelBlobAPIBase    = "https://vercel.com/api/blob"
-	vercelBlobAPIVersion = "11"
+	maxNameLength     = 40
+	minNameLength     = 3
+	maxFiles          = 100
+	maxZipBytes       = 10 * 1024 * 1024 // 10 MB per ZIP
+	maxExtractedBytes = 50 * 1024 * 1024 // 50 MB, anti zip bomb
+	blobHostSuffix    = ".vercel-storage.com"
 )
 
 var (

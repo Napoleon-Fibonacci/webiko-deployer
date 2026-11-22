@@ -2,7 +2,6 @@ package main
 
 import (
 	"html/template"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -24,21 +23,6 @@ func maskName(name string) string {
 		shown = 0
 	}
 	return name[:shown] + strings.Repeat("*", len(name)-shown)
-}
-
-func previewSources(rawURL string) []string {
-	return []string{
-		"https://api.microlink.io/?url=" + url.QueryEscape(rawURL) + "&screenshot=true&meta=false&embed=screenshot.url",
-		"https://image.thum.io/get/width/1200/crop/750/noanimate/" + url.QueryEscape(rawURL),
-	}
-}
-
-func previewHost(rawURL string) string {
-	parsed, err := url.Parse(rawURL)
-	if err != nil {
-		return rawURL
-	}
-	return parsed.Hostname()
 }
 
 func formatDateShort(value time.Time) string {

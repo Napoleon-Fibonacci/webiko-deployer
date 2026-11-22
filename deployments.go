@@ -22,8 +22,6 @@ var statusLabel = map[string]string{
 	"failed":   "Gagal",
 }
 
-const pendingTTL = 10 * time.Minute
-
 // A live row uses a slot and locks its name. Stale pending rows do not, so
 // correctness never depends on how often the cron actually runs.
 const liveSQL = `(status IN ('active','deleting') OR (status = 'pending' AND created_at > now() - interval '600 seconds'))`

@@ -68,8 +68,3 @@ func maxProjects() int {
 	}
 	return value
 }
-
-func envFlag(name string) bool {
-	value := strings.TrimSpace(os.Getenv(name))
-	return value != "" && value != "0" && !strings.EqualFold(value, "false")
-}
