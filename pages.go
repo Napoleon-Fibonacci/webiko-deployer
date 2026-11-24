@@ -11,13 +11,14 @@ import (
 )
 
 type pageData struct {
-	Site      Site
-	Used      int
-	HasUsed   bool
-	Max       int
-	Remaining int
-	Rows      []ActiveRow
-	JSONLD    template.JS
+	Site               Site
+	Used               int
+	HasUsed            bool
+	Max                int
+	Remaining          int
+	AccessCodeRequired bool
+	Rows               []ActiveRow
+	JSONLD             template.JS
 }
 
 type statusStat struct {
@@ -100,13 +101,14 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Cache-Control", "public, s-maxage=30, stale-while-revalidate=60")
 	render(w, "index.html", pageData{
-		Site:      site,
-		Used:      used,
-		HasUsed:   hasUsed,
-		Max:       maximum,
-		Remaining: remaining,
-		Rows:      rows,
-		JSONLD:    jsonForScript(jsonLD),
+		Site:               site,
+		Used:               used,
+		HasUsed:            hasUsed,
+		Max:                maximum,
+		Remaining:          remaining,
+		AccessCodeRequired: accessCodeRequired(),
+		Rows:               rows,
+		JSONLD:             jsonForScript(jsonLD),
 	}, http.StatusOK)
 }
 

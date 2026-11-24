@@ -86,6 +86,17 @@
               <p class="field-error shake" id="name-error" role="alert" hidden></p>
             </div>
 
+            {{if .AccessCodeRequired}}
+            <div class="field">
+              <label class="field-label" for="access-code">Kode akses</label>
+              <input class="input font-mono" id="access-code" type="password" autocomplete="off" spellcheck="false" placeholder="kode akses deploy" maxlength="128">
+              <div class="field-hint">
+                <span class="text-faint">Deploy sedang dibatasi. Minta kode ke pemilik Webiko.</span>
+              </div>
+              <p class="field-error shake" id="access-error" role="alert" hidden></p>
+            </div>
+            {{end}}
+
             <div class="field">
               <span class="field-label" id="source-label">Sumber</span>
               <div role="group" aria-labelledby="source-label">

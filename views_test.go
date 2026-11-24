@@ -50,6 +50,18 @@ func TestIndexTemplateEmpty(t *testing.T) {
 	if !strings.Contains(html, "maks 180 project") {
 		t.Errorf("capacity fallback missing")
 	}
+	if strings.Contains(html, `id="access-code"`) {
+		t.Errorf("access code field must stay hidden while deploy is open")
+	}
+}
+
+func TestIndexTemplateAccessCodeField(t *testing.T) {
+	html := renderTemplate(t, "index.html", pageData{Site: site, Max: 180, AccessCodeRequired: true})
+	for _, want := range []string{`id="access-code"`, `id="access-error"`, "Deploy sedang dibatasi"} {
+		if !strings.Contains(html, want) {
+			t.Errorf("gated index.html missing %q", want)
+		}
+	}
 }
 
 func TestAdminTemplateRenders(t *testing.T) {

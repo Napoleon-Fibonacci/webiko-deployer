@@ -12,6 +12,7 @@ type ErrorField string
 const (
 	FieldName   ErrorField = "name"
 	FieldSource ErrorField = "source"
+	FieldAccess ErrorField = "access"
 )
 
 // AppError carries an HTTP status and the form field to highlight, so no
@@ -102,5 +103,9 @@ func writeJSONError(w http.ResponseWriter, err error) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(errorCode(err))
-	_ = json.NewEncoder(w).Encode(map[string]string{"error": errorMessage(err)})
+	body := map[string]string{"error": errorMessage(err)}
+	if field := errorField(err); field != "" {
+		body["field"] = string(field)
+	}
+	_ = json.NewEncoder(w).Encode(body)
 }

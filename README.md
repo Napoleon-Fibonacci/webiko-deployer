@@ -67,6 +67,7 @@ sesuai nomor urut. Migrasi aman diulang.
 | `MAX_SITES_PER_OWNER` | tidak | Situs aktif per browser. Default `2`, maksimal `10`. |
 | `MIN_EVICT_HOURS` | tidak | Umur minimum situs sebelum boleh digeser deploy lain. Default `24`. |
 | `MAX_DEPLOYS_PER_DAY` | tidak | Batas deploy server per 24 jam bergulir. Default `40`, `0` = tanpa batas. |
+| `DEPLOY_ACCESS_CODE` | tidak | Kalau diisi, deploy wajib menyertakan kode ini. Kosong = publik. |
 | `OWNER_COOKIE_SECRET` | tidak | Kunci tanda tangan cookie pemilik. Kalau kosong, memakai secret server lain. |
 | `CRON_SECRET` | tidak | Kalau diisi, cron memakai `Authorization: Bearer <secret>`. |
 | `SITE_URL` | tidak | URL publik. Di Vercel otomatis dari `VERCEL_PROJECT_PRODUCTION_URL`. |
@@ -80,9 +81,10 @@ sesuai nomor urut. Migrasi aman diulang.
 2. Sumber ZIP/folder/ditempel dibungkus jadi satu ZIP di browser (fflate),
    lalu diunggah langsung ke Vercel Blob memakai token client. Ini yang membuat
    ZIP sampai 10 MB bisa lewat, di atas batas body request function Vercel.
-3. `POST /api/deploy` memvalidasi isi ZIP (maks 100 file, 50 MB setelah
-   ekstrak, wajib `index.html`), memesan slot, membuat deployment Vercel, dan
-   mengalirkan progres NDJSON ke browser.
+3. `POST /api/deploy` memeriksa `DEPLOY_ACCESS_CODE` lebih dulu bila diisi,
+   lalu memvalidasi isi ZIP (maks 100 file, 50 MB setelah ekstrak, wajib
+   `index.html`), memesan slot, membuat deployment Vercel, dan mengalirkan
+   progres NDJSON ke browser.
 4. Satu browser maksimal `MAX_SITES_PER_OWNER` situs aktif. Kalau kuota itu
    penuh, situs tertua milik browser tersebut yang diganti. Kalau kapasitas
    global penuh, hanya situs berumur minimal `MIN_EVICT_HOURS` yang boleh

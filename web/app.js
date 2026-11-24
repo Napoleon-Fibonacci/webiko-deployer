@@ -96,7 +96,7 @@
   function DeployError(message, field) {
     this.name = "DeployError";
     this.message = message || GENERIC_MESSAGE;
-    this.field = field === "name" ? "name" : "source";
+    this.field = field === "name" || field === "access" ? field : "source";
   }
   DeployError.prototype = Object.create(Error.prototype);
 
@@ -112,6 +112,8 @@
       name: byId("project-name"),
       nameStatus: byId("name-status"),
       nameError: byId("name-error"),
+      accessCode: byId("access-code"),
+      accessError: byId("access-error"),
       sourceError: byId("source-error"),
       tabs: byId("source-tabs"),
       thumb: byId("seg-thumb"),
@@ -161,6 +163,7 @@
       name: "",
       check: "idle",
       reason: "",
+      accessCode: "",
       tab: "github",
       githubUrl: "",
       code: "",
@@ -186,13 +189,18 @@
     }
 
     function isReady() {
-      return isValidName(state.name) && state.check === "ok" && sourceReady();
+      return isValidName(state.name) && state.check === "ok" && sourceReady() && accessReady();
+    }
+
+    function accessReady() {
+      return !els.accessCode || state.accessCode.trim().length > 0;
     }
 
     function hintText() {
       if (!isValidName(state.name)) return "Isi nama project";
       if (state.check === "checking") return "Memeriksa nama…";
       if (state.check !== "ok") return "Nama belum tersedia";
+      if (!accessReady()) return "Isi kode akses";
       if (!sourceReady()) return "Pilih sumber situs";
       return "Siap dideploy";
     }
@@ -204,11 +212,14 @@
     }
 
     function showError(message, field) {
-      state.error = { target: field === "name" ? "name" : "source", message: message };
+      var target = field === "name" || field === "access" ? field : "source";
+      state.error = { target: target, message: message };
       render();
-      var el = state.error.target === "name" ? els.nameError : els.sourceError;
+      var el =
+        target === "name" ? els.nameError : target === "access" ? els.accessError : els.sourceError;
       markShake(el);
-      if (state.error.target === "name") els.name.focus();
+      if (target === "name") els.name.focus();
+      if (target === "access" && els.accessCode) els.accessCode.focus();
     }
 
     function renderNameStatus() {
@@ -264,10 +275,13 @@
 
     function renderErrors() {
       var nameError = state.error && state.error.target === "name";
+      var accessError = state.error && state.error.target === "access";
       var sourceError = state.error && state.error.target === "source";
       els.nameError.hidden = !nameError;
+      if (els.accessError) els.accessError.hidden = !accessError;
       els.sourceError.hidden = !sourceError;
       if (nameError) els.nameError.innerHTML = ICON.alert + "<span>" + esc(state.error.message) + "</span>";
+      if (accessError && els.accessError) els.accessError.innerHTML = ICON.alert + "<span>" + esc(state.error.message) + "</span>";
       if (sourceError) els.sourceError.innerHTML = ICON.alert + "<span>" + esc(state.error.message) + "</span>";
     }
 
@@ -363,6 +377,7 @@
 
     function render() {
       if (els.name.value !== state.name) els.name.value = state.name;
+      if (els.accessCode && els.accessCode.value !== state.accessCode) els.accessCode.value = state.accessCode;
       if (els.githubUrl.value !== state.githubUrl) els.githubUrl.value = state.githubUrl;
       if (els.code.value !== state.code) els.code.value = state.code;
 
@@ -487,6 +502,14 @@
       clearErrors();
       render();
     });
+
+    if (els.accessCode) {
+      els.accessCode.addEventListener("input", function () {
+        state.accessCode = els.accessCode.value;
+        clearErrors();
+        render();
+      });
+    }
 
     els.code.addEventListener("input", function () {
       state.code = els.code.value;
@@ -801,7 +824,7 @@
         var response = await fetch("/api/deploy", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ name: state.name, source: source }),
+          body: JSON.stringify({ name: state.name, source: source, accessCode: state.accessCode }),
           signal: controller.signal,
         });
 
@@ -809,7 +832,7 @@
           var payload = await response.json().catch(function () {
             return null;
           });
-          throw new DeployError((payload && payload.error) || GENERIC_MESSAGE, "source");
+          throw new DeployError((payload && payload.error) || GENERIC_MESSAGE, payload && payload.field);
         }
 
         var finished = await streamEvents(response.body, {

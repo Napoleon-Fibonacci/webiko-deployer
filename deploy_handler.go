@@ -14,8 +14,9 @@ type deploySourcePayload struct {
 }
 
 type deployRequest struct {
-	Name   string              `json:"name"`
-	Source deploySourcePayload `json:"source"`
+	Name       string              `json:"name"`
+	Source     deploySourcePayload `json:"source"`
+	AccessCode string              `json:"accessCode"`
 }
 
 type deployEvent struct {
@@ -41,6 +42,12 @@ func handleDeploy(w http.ResponseWriter, r *http.Request) {
 	var payload deployRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&payload); err != nil {
 		writeJSONError(w, newAppError(http.StatusBadRequest, "Body tidak valid.", FieldSource))
+		return
+	}
+
+	// The gate runs before any cookie, quota, or Vercel call.
+	if err := checkDeployAccess(payload.AccessCode, getClientIP(r)); err != nil {
+		writeJSONError(w, err)
 		return
 	}
 
