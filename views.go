@@ -82,6 +82,8 @@ func templateFuncs() template.FuncMap {
 		"mask":          maskName,
 		"formatShort":   formatDateShort,
 		"formatLong":    formatDateLong,
+		"ttlDays":       siteTTLDays,
+		"expiryFor":     expiryFor,
 		"prettyURL":     prettyURL,
 		"itoa":          itoa,
 		"statusLabel":   func(status string) string { return statusLabel[status] },

@@ -107,6 +107,13 @@ func handleDeploy(w http.ResponseWriter, r *http.Request) {
 
 	stage("files")
 	files, err := fetchDeployFiles(payload.Source.Type, payload.Source.URL, payload.Source.BlobURL)
+	// The ZIP has been read into memory (or the read failed). Either way the
+	// public blob is no longer needed; keep it out of storage.
+	if payload.Source.Type == "zip" && payload.Source.BlobURL != "" {
+		if deleteErr := deleteBlob(payload.Source.BlobURL); deleteErr != nil {
+			log.Printf("delete uploaded blob: %v", deleteErr)
+		}
+	}
 	if err != nil {
 		finish(err)
 		return

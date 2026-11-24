@@ -69,7 +69,7 @@
         <header>
           <p class="label">Deploy statis</p>
           <h1 class="stack-title">Deploy situs ke Vercel</h1>
-          <p class="lead">Isi nama, pilih sumber, lalu deploy. Tanpa akun Vercel sendiri.</p>
+          <p class="lead">Isi nama, pilih sumber, lalu deploy. Tanpa akun Vercel sendiri. Tiap situs aktif {{ttlDays}} hari, lalu dihapus otomatis.</p>
         </header>
 
         <section class="pane-main">
@@ -198,12 +198,12 @@
               {{range $i, $row := .Rows}}
                 <li class="ledger-row row-in" style="--d:{{if lt (mul $i 30) 300}}{{mul $i 30}}{{else}}300{{end}}ms">
                   <span class="ledger-name">{{mask $row.Name}}<span>.vercel.app</span></span>
-                  <time>{{formatShort $row.CreatedAt}}</time>
+                  <time title="Aktif sampai {{formatLong (expiryFor $row.CreatedAt)}}">{{formatShort $row.CreatedAt}}</time>
                 </li>
               {{end}}
             </ul>
           {{end}}
-          <p class="pane-side-note">Nama disamarkan — dua huruf pertama saja — karena halaman ini publik. Saat kapasitas penuh, project tertua dihapus otomatis sebelum deploy baru.</p>
+          <p class="pane-side-note">Nama disamarkan — dua huruf pertama saja — karena halaman ini publik. Tiap situs aktif sekitar {{ttlDays}} hari sejak deploy, lalu dihapus otomatis. Saat kapasitas penuh, project tertua bisa digeser.</p>
         </aside>
 
         <section class="guide">
@@ -213,7 +213,7 @@
             <li>Tempel perintah di bawah. Ganti bagian dalam tanda kurung siku dengan maumu — mau web undangan, portofolio, menu jualan, apa saja.</li>
             <li>AI-nya menjawab dengan satu blok kode. Salin semuanya, lalu tempel di kolom <em>Tempel kode</em> di atas — atau simpan jadi berkas <code>index.html</code> lalu unggah lewat tab <em>ZIP</em>.</li>
             <li>Sudah punya kodenya di GitHub, atau berkasnya banyak? Pakai tab <em>GitHub</em> atau <em>ZIP</em>. Tiga jalan itu ujungnya sama.</li>
-            <li>Tekan <strong>Deploy</strong>, tunggu sebentar, dapat link. Tinggal disebar.</li>
+            <li>Tekan <strong>Deploy</strong>, tunggu sebentar, dapat link. Tinggal disebar. Situs aktif sekitar {{ttlDays}} hari; setelah itu dihapus agar slot bisa dipakai orang lain.</li>
           </ol>
 
           <div class="guide-prompt">

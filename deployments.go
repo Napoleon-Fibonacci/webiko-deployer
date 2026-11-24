@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -31,6 +32,17 @@ const failStaleSQL = `UPDATE deployments SET status = 'failed'
 
 const pruneRateLimitsSQL = `DELETE FROM rate_limits
   WHERE window_start < now() - interval '1 day'`
+
+// Rows past their TTL leave "active" first, then the sweep below deletes the
+// Vercel project. Marking them separately keeps a slow Vercel call from losing
+// track of which sites have already expired.
+const expireOverdueSQL = `UPDATE deployments SET status = 'deleting'
+  WHERE id IN (
+    SELECT id FROM deployments
+    WHERE status = 'active' AND created_at < $1
+    ORDER BY created_at ASC
+    LIMIT $2
+  )`
 
 type ReservedVictim struct {
 	ID              string
@@ -73,8 +85,10 @@ type AdminList struct {
 
 type SweepResult struct {
 	Failed    int64 `json:"failed"`
+	Expired   int64 `json:"expired"`
 	Deleted   int   `json:"deleted"`
 	Gone      int   `json:"gone"`
+	Blobs     int   `json:"blobs"`
 	Remaining int   `json:"remaining"`
 }
 
@@ -132,15 +146,19 @@ func reserveSlot(name, sourceType string) (Reservation, error) {
 
 	var victim *ReservedVictim
 	if count > maxProjects() {
+		// Expired sites go first even if a younger site is technically the
+		// global oldest; they were already due for removal anyway.
+		cutoff := time.Now().Add(-siteTTL())
 		row := tx.QueryRowContext(ctx,
 			`UPDATE deployments SET status = 'deleting'
 			 WHERE id = (
 			   SELECT id FROM deployments
 			   WHERE `+liveSQL+` AND status <> 'deleting'
-			   ORDER BY created_at ASC LIMIT 1
+			   ORDER BY (status = 'active' AND created_at < $1) DESC, created_at ASC
+			   LIMIT 1
 			   FOR UPDATE SKIP LOCKED
 			 )
-			 RETURNING id, name, vercel_project_id`)
+			 RETURNING id, name, vercel_project_id`, cutoff)
 		var found ReservedVictim
 		if err = row.Scan(&found.ID, &found.Name, &found.VercelProjectID); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -431,6 +449,27 @@ func reconcileGone(limit int) (int, error) {
 	return gone, nil
 }
 
+// expireOverdue moves sites past their TTL into the deletion queue. The limit
+// keeps one run bounded; the cron asks for a larger batch than the admin button.
+// Leftover expired rows are still preferred victims in reserveSlot.
+func expireOverdue(cutoff time.Time, limit int) (int64, error) {
+	db, err := getDB()
+	if err != nil {
+		return 0, err
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	result, err := db.ExecContext(ctx, expireOverdueSQL, cutoff, limit)
+	if err != nil {
+		return 0, err
+	}
+	affected, _ := result.RowsAffected()
+	return affected, nil
+}
+
 // sweepStale is the safety net used by the daily cron and the admin button.
 func sweepStale(limit int) (SweepResult, error) {
 	db, err := getDB()
@@ -451,6 +490,14 @@ func sweepStale(limit int) (SweepResult, error) {
 		return SweepResult{}, err
 	}
 	affected, _ := failed.RowsAffected()
+
+	// Queue overdue sites in the same batch size the Vercel deletes can clear.
+	// Any leftover expired rows stay "active" but reserveSlot still picks them
+	// first, so a backlog never pushes a younger site out.
+	expired, err := expireOverdue(time.Now().Add(-siteTTL()), limit)
+	if err != nil {
+		return SweepResult{}, err
+	}
 
 	rows, err := db.QueryContext(ctx,
 		`SELECT id, vercel_project_id FROM deployments
@@ -498,9 +545,23 @@ func sweepStale(limit int) (SweepResult, error) {
 		return SweepResult{}, err
 	}
 
+	// Abandoned ZIPs are cheap to remove and should never linger in Blob
+	// storage. Failures here must not fail the whole sweep.
+	blobs, blobErr := cleanupOrphanBlobs(24 * time.Hour)
+	if blobErr != nil {
+		log.Printf("cleanup orphan blobs: %v", blobErr)
+	}
+
 	var remaining int
 	if err = db.QueryRowContext(ctx, `SELECT count(*)::int FROM deployments WHERE status = 'deleting'`).Scan(&remaining); err != nil {
 		return SweepResult{}, err
 	}
-	return SweepResult{Failed: affected, Deleted: deleted, Gone: gone, Remaining: remaining}, nil
+	return SweepResult{
+		Failed:    affected,
+		Expired:   expired,
+		Deleted:   deleted,
+		Gone:      gone,
+		Blobs:     blobs,
+		Remaining: remaining,
+	}, nil
 }

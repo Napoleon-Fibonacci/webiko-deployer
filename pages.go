@@ -32,16 +32,17 @@ type flashMessage struct {
 }
 
 type adminData struct {
-	Site       Site
-	Rows       []AdminRow
-	Stats      []statusStat
-	Total      int
-	Matched    int
-	Status     string
-	Query      string
-	Flash      *flashMessage
-	Limit      int
-	AdminError bool
+	Site        Site
+	Rows        []AdminRow
+	Stats       []statusStat
+	Total       int
+	Matched     int
+	Status      string
+	Query       string
+	Flash       *flashMessage
+	Limit       int
+	AdminError  bool
+	CronMissing bool
 }
 
 type loginData struct {
@@ -122,12 +123,13 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 
 	list, err := listForAdmin(AdminFilter{Status: status, Query: search}, 100)
 	data := adminData{
-		Site:       site,
-		Status:     status,
-		Query:      search,
-		Limit:      100,
-		Flash:      flashFromQuery(query),
-		AdminError: err != nil,
+		Site:        site,
+		Status:      status,
+		Query:       search,
+		Limit:       100,
+		Flash:       flashFromQuery(query),
+		AdminError:  err != nil,
+		CronMissing: strings.TrimSpace(os.Getenv("CRON_SECRET")) == "",
 	}
 	if err == nil {
 		data.Rows = list.Rows
@@ -238,7 +240,9 @@ func handleAdminSweep(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/admin?swept=1&failed="+strconv.FormatInt(result.Failed, 10)+
-		"&deleted="+itoa(result.Deleted)+"&gone="+itoa(result.Gone), http.StatusSeeOther)
+		"&expired="+strconv.FormatInt(result.Expired, 10)+
+		"&deleted="+itoa(result.Deleted)+"&gone="+itoa(result.Gone)+
+		"&blobs="+itoa(result.Blobs), http.StatusSeeOther)
 }
 
 func handleCron(w http.ResponseWriter, r *http.Request) {
@@ -257,7 +261,9 @@ func handleCron(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string]string{"error": "Tidak diizinkan."}, http.StatusUnauthorized)
 		return
 	}
-	result, err := sweepStale(10)
+	// The cron runs once a day, so it clears a larger batch than the admin
+	// button. Anything left over is reported as "remaining" for the next run.
+	result, err := sweepStale(40)
 	if err != nil {
 		writeJSON(w, map[string]string{"error": errorMessage(err)}, http.StatusInternalServerError)
 		return
@@ -265,8 +271,10 @@ func handleCron(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]any{
 		"ok":        true,
 		"failed":    result.Failed,
+		"expired":   result.Expired,
 		"deleted":   result.Deleted,
 		"gone":      result.Gone,
+		"blobs":     result.Blobs,
 		"remaining": result.Remaining,
 	}, http.StatusOK)
 }
@@ -324,7 +332,11 @@ func flashFromQuery(query url.Values) *flashMessage {
 			gone, _ = strconv.Atoi(value)
 		}
 		text := "Sapuan selesai: " + defaultZero(query.Get("failed")) + " pending basi ditandai gagal, " +
+			defaultZero(query.Get("expired")) + " situs kedaluwarsa ditandai, " +
 			defaultZero(query.Get("deleted")) + " project dihapus di Vercel."
+		if blobs := query.Get("blobs"); blobs != "" && blobs != "0" {
+			text += " " + blobs + " ZIP yatim dihapus dari Blob."
+		}
 		if gone > 0 {
 			text += " " + itoa(gone) + " baris ditutup karena project-nya sudah tak ada di Vercel."
 		}

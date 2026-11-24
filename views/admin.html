@@ -55,6 +55,10 @@
           </p>
         {{end}}
 
+        {{if .CronMissing}}
+          <p class="admin-note">Cron harian belum aktif: isi env <code>CRON_SECRET</code> di Vercel (Production) lalu redeploy. Tanpa itu, situs kedaluwarsa baru terhapus saat kapasitas penuh.</p>
+        {{end}}
+
         {{if .AdminError}}
           <p class="admin-empty">Database belum siap. Coba lagi sebentar.</p>
         {{else}}
@@ -93,6 +97,7 @@
                     <th>Sumber</th>
                     <th>URL</th>
                     <th>Dibuat</th>
+                    <th>Kedaluwarsa</th>
                     <th>Dihapus</th>
                     <th><span class="sr-only">Aksi</span></th>
                   </tr>
@@ -111,6 +116,7 @@
                         {{end}}
                       </td>
                       <td class="text-faint">{{formatLong $row.CreatedAt}}</td>
+                      <td class="text-faint">{{if or (eq $row.Status "active") (eq $row.Status "pending")}}{{formatLong (expiryFor $row.CreatedAt)}}{{else}}—{{end}}</td>
                       <td class="text-faint">{{if $row.DeletedAt.Valid}}{{formatLong $row.DeletedAt.Time}}{{else}}—{{end}}</td>
                       <td class="admin-cell-action">
                         {{if eq $row.Status "deleted"}}
@@ -130,7 +136,7 @@
             <p class="admin-note">Menampilkan {{len .Rows}} terbaru dari {{.Matched}} baris. Persempit dengan filter atau pencarian.</p>
           {{end}}
 
-          <p class="admin-note">Menghapus di sini ikut menghapus project-nya di Vercel, jadi URL-nya berhenti hidup dan slotnya bebas lagi.</p>
+          <p class="admin-note">Menghapus di sini ikut menghapus project-nya di Vercel, jadi URL-nya berhenti hidup dan slotnya bebas lagi. Situs yang lewat masa aktif {{ttlDays}} hari dipindahkan ke antrean hapus oleh sapuan harian.</p>
         {{end}}
       </div>
     </main>

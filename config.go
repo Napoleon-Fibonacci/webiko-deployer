@@ -4,6 +4,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Site identity: one home for the name, description, canonical URL and locale.
@@ -40,7 +41,7 @@ func newSite() Site {
 		Title:   "Webiko Deployer — Deploy situs HTML statis ke Vercel",
 		Tagline: "Deploy situs HTML statis ke Vercel",
 		Description: "Deploy situs HTML statis ke Vercel tanpa akun Vercel sendiri. " +
-			"Sumber ZIP atau repo GitHub, nama dicek otomatis, project terlama dibersihkan otomatis.",
+			"Sumber ZIP atau repo GitHub, nama dicek otomatis, situs aktif sekitar 7 hari lalu digilir otomatis.",
 		URL:        resolveSiteURL(),
 		Locale:     "id_ID",
 		Lang:       "id",
@@ -56,6 +57,33 @@ func newSite() Site {
 }
 
 var site = newSite()
+
+// A site lives for a fixed number of days, measured from created_at. No new
+// column is needed: expiry is derived, and the daily cron deletes overdue rows.
+const defaultSiteTTLDays = 7
+
+func siteTTLDays() int {
+	raw := strings.TrimSpace(os.Getenv("SITE_TTL_DAYS"))
+	if raw == "" {
+		return defaultSiteTTLDays
+	}
+	days, err := strconv.Atoi(raw)
+	if err != nil || days < 1 || days > 30 {
+		return defaultSiteTTLDays
+	}
+	return days
+}
+
+func siteTTL() time.Duration {
+	return time.Duration(siteTTLDays()) * 24 * time.Hour
+}
+
+func expiryFor(createdAt time.Time) time.Time {
+	if createdAt.IsZero() {
+		return time.Time{}
+	}
+	return createdAt.Add(siteTTL())
+}
 
 func maxProjects() int {
 	raw := strings.TrimSpace(os.Getenv("MAX_PROJECTS"))

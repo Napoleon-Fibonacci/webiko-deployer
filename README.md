@@ -63,6 +63,7 @@ sesuai nomor urut. Migrasi aman diulang.
 | `VERCEL_TEAM_ID` | tidak | Isi kalau project ada di dalam team. |
 | `BLOB_READ_WRITE_TOKEN` | ya | Token Vercel Blob untuk upload ZIP. |
 | `MAX_PROJECTS` | tidak | Default `180`. |
+| `SITE_TTL_DAYS` | tidak | Umur situs dalam hari. Default `7`, maksimal `30`. |
 | `CRON_SECRET` | tidak | Kalau diisi, cron memakai `Authorization: Bearer <secret>`. |
 | `SITE_URL` | tidak | URL publik. Di Vercel otomatis dari `VERCEL_PROJECT_PRODUCTION_URL`. |
 | `ADMIN_PASSWORD` | tidak | Kosong = menu `/admin` nonaktif. |
