@@ -62,7 +62,17 @@ func handleDeploy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var rowID string
+	var victim *ReservedVictim
 	finish := func(err error) {
+		// The oldest project is only marked "deleting" during reservation. If
+		// the new deployment never becomes active, put it back so a failed
+		// deploy does not cost an existing site.
+		if victim != nil {
+			if revertErr := revertVictim(victim.ID); revertErr != nil {
+				log.Printf("revert victim %s: %v", victim.ID, revertErr)
+			}
+			victim = nil
+		}
 		if rowID != "" {
 			_ = markFailed(rowID)
 		}
@@ -109,28 +119,12 @@ func handleDeploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rowID = reservation.RowID
+	victim = reservation.Victim
 	stage("create")
 
-	// Deleting the oldest project happens outside the advisory lock.
-	if reservation.Victim != nil {
-		victim := reservation.Victim
-		var deleteErr error
-		if victim.VercelProjectID.Valid && victim.VercelProjectID.String != "" {
-			// Only ever delete via vercel_project_id from our own table.
-			deleteErr = deleteVercelProject(victim.VercelProjectID.String)
-		}
-		if deleteErr != nil {
-			_ = revertVictim(victim.ID)
-			finish(newVercelAPI("Gagal menghapus project tertua di Vercel. Deploy baru dibatalkan; coba lagi.", http.StatusBadGateway))
-			return
-		}
-		if err = markDeleted(victim.ID); err != nil {
-			_ = revertVictim(victim.ID)
-			finish(err)
-			return
-		}
-	}
-
+	// Build the replacement before removing anything. The victim's Vercel
+	// project is deleted only after the new deployment is active, so a Vercel
+	// failure cannot leave the visitor with neither site.
 	result, err := createDeployment(name, files)
 	if err != nil {
 		finish(err)
@@ -147,9 +141,37 @@ func handleDeploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err = markActive(rowID, result.ProjectID, result.URL); err != nil {
+		// The project exists but could not be recorded, so remove it to avoid
+		// an orphan and restore the old project.
+		if deleteErr := deleteVercelProject(result.ProjectID); deleteErr != nil {
+			log.Printf("cleanup unrecorded project %s: %v", result.ProjectID, deleteErr)
+		}
 		finish(err)
 		return
 	}
+
+	if victim != nil {
+		old := victim
+		victim = nil
+		if old.VercelProjectID.Valid && old.VercelProjectID.String != "" {
+			if deleteErr := deleteVercelProject(old.VercelProjectID.String); deleteErr != nil {
+				// The new site is already live; keep the old one running too
+				// instead of marking a live project as deleted. A later deploy
+				// or the daily sweep can retry.
+				log.Printf("delete victim %s: %v", old.ID, deleteErr)
+				if revertErr := revertVictim(old.ID); revertErr != nil {
+					log.Printf("revert victim %s: %v", old.ID, revertErr)
+				}
+			} else if markErr := markDeleted(old.ID); markErr != nil {
+				// Project is gone; the daily sweep closes the row by checking
+				// whether the Vercel project still exists.
+				log.Printf("mark victim %s deleted: %v", old.ID, markErr)
+			}
+		} else if markErr := markDeleted(old.ID); markErr != nil {
+			log.Printf("mark victim %s deleted: %v", old.ID, markErr)
+		}
+	}
+
 	send(deployEvent{Type: "done", URL: result.URL, Renamed: result.Renamed})
 }
 

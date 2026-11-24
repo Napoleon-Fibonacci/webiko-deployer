@@ -171,7 +171,7 @@ func markDeleted(rowID string) error {
 }
 
 func revertVictim(rowID string) error {
-	return execQuery(`UPDATE deployments SET status = 'active' WHERE id = $1`, rowID)
+	return execQuery(`UPDATE deployments SET status = 'active' WHERE id = $1 AND status = 'deleting'`, rowID)
 }
 
 func execQuery(query string, args ...any) error {
