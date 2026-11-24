@@ -29,10 +29,10 @@ var ownerIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{16,64}$`)
 func ownerKey() []byte {
 	for _, name := range []string{
 		"OWNER_COOKIE_SECRET",
-		"ADMIN_PASSWORD",
 		"CRON_SECRET",
 		"VERCEL_TOKEN",
 		"BLOB_READ_WRITE_TOKEN",
+		"ADMIN_PASSWORD",
 	} {
 		if value := strings.TrimSpace(os.Getenv(name)); value != "" {
 			return []byte("webiko-owner-v1:" + value)
