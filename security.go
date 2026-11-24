@@ -1,9 +1,11 @@
 package main
 
 import (
+	"crypto/subtle"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 )
 
@@ -86,4 +88,29 @@ func requireSameOrigin(next http.HandlerFunc) http.HandlerFunc {
 		}
 		next(w, r)
 	}
+}
+
+// bearerToken accepts any casing of the "Bearer" scheme and ignores stray
+// spaces around the token. Pasted secrets often carry a trailing space, and
+// HTTP itself strips trailing whitespace from header values.
+func bearerToken(header string) string {
+	const prefix = "bearer "
+	if len(header) < len(prefix) || !strings.EqualFold(header[:len(prefix)], prefix) {
+		return ""
+	}
+	return strings.TrimSpace(header[len(prefix):])
+}
+
+// cronAuthorized compares only the token, in constant time. An empty
+// CRON_SECRET always fails closed.
+func cronAuthorized(r *http.Request) bool {
+	secret := strings.TrimSpace(os.Getenv("CRON_SECRET"))
+	if secret == "" || r == nil {
+		return false
+	}
+	given := bearerToken(r.Header.Get("Authorization"))
+	if given == "" {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(given), []byte(secret)) == 1
 }

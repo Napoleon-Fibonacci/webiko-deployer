@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/subtle"
 	"html/template"
 	"net/http"
 	"net/url"
@@ -246,14 +245,7 @@ func handleAdminSweep(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleCron(w http.ResponseWriter, r *http.Request) {
-	authorized := false
-	secret := strings.TrimSpace(os.Getenv("CRON_SECRET"))
-	if secret != "" {
-		expected := "Bearer " + secret
-		if subtle.ConstantTimeCompare([]byte(r.Header.Get("Authorization")), []byte(expected)) == 1 {
-			authorized = true
-		}
-	}
+	authorized := cronAuthorized(r)
 	if !authorized && isAdmin(r) && sameOrigin(r) {
 		authorized = true
 	}

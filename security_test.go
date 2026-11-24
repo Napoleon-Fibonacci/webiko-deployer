@@ -44,6 +44,51 @@ func TestGetClientIPFallsBackToRemoteAddr(t *testing.T) {
 	}
 }
 
+func TestBearerToken(t *testing.T) {
+	tests := []struct {
+		header string
+		want   string
+	}{
+		{header: "Bearer abc123", want: "abc123"},
+		{header: "bearer abc123", want: "abc123"},
+		{header: "Bearer   abc123  ", want: "abc123"},
+		{header: "Basic abc123", want: ""},
+		{header: "Bearer", want: ""},
+		{header: "", want: ""},
+	}
+	for _, test := range tests {
+		if got := bearerToken(test.header); got != test.want {
+			t.Fatalf("bearerToken(%q) = %q, want %q", test.header, got, test.want)
+		}
+	}
+}
+
+func TestCronAuthorized(t *testing.T) {
+	t.Setenv("CRON_SECRET", "s3cret-value")
+
+	r := httptest.NewRequest("GET", "/api/cron/cleanup", nil)
+	r.Header.Set("Authorization", "Bearer s3cret-value")
+	if !cronAuthorized(r) {
+		t.Fatal("expected matching bearer token to pass")
+	}
+
+	r.Header.Set("Authorization", "Bearer wrong")
+	if cronAuthorized(r) {
+		t.Fatal("expected wrong token to fail")
+	}
+
+	r.Header.Set("Authorization", "Bearer s3cret-value ")
+	if !cronAuthorized(r) {
+		t.Fatal("expected trailing space to be ignored")
+	}
+
+	t.Setenv("CRON_SECRET", "")
+	r.Header.Set("Authorization", "Bearer ")
+	if cronAuthorized(r) {
+		t.Fatal("expected empty secret to fail closed")
+	}
+}
+
 func TestSameOrigin(t *testing.T) {
 	tests := []struct {
 		name    string
