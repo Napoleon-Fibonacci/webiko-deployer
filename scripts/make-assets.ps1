@@ -49,11 +49,11 @@ function Draw-W {
 $icon = New-Object System.Drawing.Bitmap 180, 180
 $g = [System.Drawing.Graphics]::FromImage($icon)
 $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
-$g.Clear([System.Drawing.ColorTranslator]::FromHtml("#191919"))
+$g.Clear([System.Drawing.ColorTranslator]::FromHtml("#121314"))
 
 $plate = New-RoundedPath 18 18 144 144 34
 $g.FillPath((Brush "#ffe14d"), $plate)
-Draw-W $g (Pen "#191919" 15) 18 18 144 144
+Draw-W $g (Pen "#121314" 15) 18 18 144 144
 
 $icon.Save((Join-Path $web "apple-icon.png"), [System.Drawing.Imaging.ImageFormat]::Png)
 $g.Dispose()
@@ -64,7 +64,7 @@ $og = New-Object System.Drawing.Bitmap 1200, 630
 $g = [System.Drawing.Graphics]::FromImage($og)
 $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
 $g.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAliasGridFit
-$g.Clear([System.Drawing.ColorTranslator]::FromHtml("#191919"))
+$g.Clear([System.Drawing.ColorTranslator]::FromHtml("#121314"))
 
 $glow = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(16, 255, 225, 77))
 $g.FillEllipse($glow, 260, -220, 680, 420)
@@ -75,7 +75,7 @@ $g.DrawPath((Pen "#302e29" 2), $panel)
 
 $mark = New-RoundedPath 110 110 72 72 18
 $g.FillPath((Brush "#ffe14d"), $mark)
-Draw-W $g (Pen "#191919" 8) 110 110 72 72
+Draw-W $g (Pen "#121314" 8) 110 110 72 72
 
 $brandFont = New-Object System.Drawing.Font "Segoe UI", 26, ([System.Drawing.FontStyle]::Bold), ([System.Drawing.GraphicsUnit]::Pixel)
 $g.DrawString("Webiko Deployer", $brandFont, (Brush "#f2efe6"), 202, 128)

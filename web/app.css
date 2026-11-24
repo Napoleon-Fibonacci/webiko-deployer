@@ -20,7 +20,7 @@
 :root {
   color-scheme: dark;
 
-  --bg: #191919;
+  --bg: #121314;
   --surface: #1f1e1c;
   --surface-2: #242320;
   --surface-3: #2b2a26;
@@ -35,7 +35,7 @@
   --faint: #8d8779;
 
   --accent: #ffe14d;
-  --accent-ink: #191919;
+  --accent-ink: #121314;
   --accent-soft: rgba(255, 225, 77, 0.1);
   --accent-line: rgba(255, 225, 77, 0.28);
 
@@ -189,7 +189,7 @@ code {
   top: 0;
   z-index: 40;
   border-bottom: 1px solid var(--line);
-  background-color: rgba(25, 25, 25, 0.82);
+  background-color: rgba(18, 19, 20, 0.82);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
 }

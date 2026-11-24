@@ -44,7 +44,7 @@ func newSite() Site {
 		URL:        resolveSiteURL(),
 		Locale:     "id_ID",
 		Lang:       "id",
-		ThemeColor: "#191919",
+		ThemeColor: "#121314",
 		Keywords: []string{
 			"deploy situs statis",
 			"deploy HTML ke Vercel",
