@@ -263,6 +263,17 @@ code {
   color: var(--faint);
 }
 
+.capacity.is-full {
+  border-color: rgba(255, 207, 107, 0.32);
+  background-color: var(--warn-soft);
+  color: var(--warn);
+}
+
+.capacity.is-full svg,
+.capacity.is-full strong {
+  color: var(--warn);
+}
+
 .capacity strong,
 .capacity b {
   color: var(--ink-2);

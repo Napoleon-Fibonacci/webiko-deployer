@@ -18,10 +18,11 @@ func renderTemplate(t *testing.T, name string, data any) string {
 
 func TestIndexTemplateRenders(t *testing.T) {
 	html := renderTemplate(t, "index.html", pageData{
-		Site:    site,
-		Used:    3,
-		HasUsed: true,
-		Max:     180,
+		Site:      site,
+		Used:      3,
+		HasUsed:   true,
+		Max:       180,
+		Remaining: 177,
 		Rows: []ActiveRow{
 			{ID: "1", Name: "situs-panjang", CreatedAt: time.Date(2026, 11, 3, 7, 5, 0, 0, time.UTC)},
 		},
@@ -30,6 +31,7 @@ func TestIndexTemplateRenders(t *testing.T) {
 	for _, want := range []string{
 		"Webiko Deployer",
 		"Deploy situs ke Vercel",
+		"177</strong> slot tersisa",
 		"si***********<span>.vercel.app</span>",
 		"3 Nov",
 		"/static/app.js",

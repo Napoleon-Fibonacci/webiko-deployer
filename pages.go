@@ -11,12 +11,13 @@ import (
 )
 
 type pageData struct {
-	Site    Site
-	Used    int
-	HasUsed bool
-	Max     int
-	Rows    []ActiveRow
-	JSONLD  template.JS
+	Site      Site
+	Used      int
+	HasUsed   bool
+	Max       int
+	Remaining int
+	Rows      []ActiveRow
+	JSONLD    template.JS
 }
 
 type statusStat struct {
@@ -62,6 +63,11 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		rows = nil
 	}
+	maximum := maxProjects()
+	remaining := maximum - used
+	if remaining < 0 {
+		remaining = 0
+	}
 
 	jsonLD := map[string]any{
 		"@context": "https://schema.org",
@@ -94,12 +100,13 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Cache-Control", "public, s-maxage=30, stale-while-revalidate=60")
 	render(w, "index.html", pageData{
-		Site:    site,
-		Used:    used,
-		HasUsed: hasUsed,
-		Max:     maxProjects(),
-		Rows:    rows,
-		JSONLD:  jsonForScript(jsonLD),
+		Site:      site,
+		Used:      used,
+		HasUsed:   hasUsed,
+		Max:       maximum,
+		Remaining: remaining,
+		Rows:      rows,
+		JSONLD:    jsonForScript(jsonLD),
 	}, http.StatusOK)
 }
 

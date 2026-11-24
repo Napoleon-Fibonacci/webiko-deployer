@@ -150,6 +150,11 @@ func ownerBusyError() error {
 			" situs dan belum ada yang bisa diganti. Tunggu sebentar lalu coba lagi.", FieldSource)
 }
 
+func dailyDeployError() error {
+	return newRateLimit("Kuota deploy server (" + itoa(maxDeploysPerDay()) +
+		" per 24 jam) sudah habis. Coba lagi nanti.")
+}
+
 // reserveSlot creates the pending row under an advisory transaction lock. It
 // first enforces the per-browser quota, replacing that browser's own oldest
 // site, then the global cap, which may only remove a site at least
@@ -176,6 +181,21 @@ func reserveSlot(name, sourceType, ownerID string) (Reservation, error) {
 	}
 	if _, err = tx.ExecContext(ctx, failStaleSQL); err != nil {
 		return Reservation{}, err
+	}
+
+	// A rolling window protects the Vercel deployment quota without punishing
+	// failures at midnight. The advisory lock above serializes this check.
+	if limit := maxDeploysPerDay(); limit > 0 {
+		var recent int
+		if err = tx.QueryRowContext(ctx,
+			`SELECT count(*)::int FROM deployments WHERE created_at >= $1`,
+			time.Now().Add(-24*time.Hour),
+		).Scan(&recent); err != nil {
+			return Reservation{}, err
+		}
+		if recent >= limit {
+			return Reservation{}, dailyDeployError()
+		}
 	}
 
 	var rowID string

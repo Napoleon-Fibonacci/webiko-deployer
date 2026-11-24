@@ -65,6 +65,7 @@ const defaultSiteTTLDays = 7
 const (
 	defaultMaxSitesPerOwner = 2
 	defaultMinEvictHours    = 24
+	defaultMaxDeploysPerDay = 40
 )
 
 func maxSitesPerOwner() int {
@@ -93,6 +94,20 @@ func minEvictHours() int {
 
 func minEvictAge() time.Duration {
 	return time.Duration(minEvictHours()) * time.Hour
+}
+
+// maxDeploysPerDay caps reservations in a rolling 24-hour window. Zero
+// disables the cap. The default protects the Vercel deployment quota.
+func maxDeploysPerDay() int {
+	raw := strings.TrimSpace(os.Getenv("MAX_DEPLOYS_PER_DAY"))
+	if raw == "" {
+		return defaultMaxDeploysPerDay
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil || value < 0 || value > 1000 {
+		return defaultMaxDeploysPerDay
+	}
+	return value
 }
 
 func siteTTLDays() int {

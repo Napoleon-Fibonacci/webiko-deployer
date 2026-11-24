@@ -66,6 +66,7 @@ sesuai nomor urut. Migrasi aman diulang.
 | `SITE_TTL_DAYS` | tidak | Umur situs dalam hari. Default `7`, maksimal `30`. |
 | `MAX_SITES_PER_OWNER` | tidak | Situs aktif per browser. Default `2`, maksimal `10`. |
 | `MIN_EVICT_HOURS` | tidak | Umur minimum situs sebelum boleh digeser deploy lain. Default `24`. |
+| `MAX_DEPLOYS_PER_DAY` | tidak | Batas deploy server per 24 jam bergulir. Default `40`, `0` = tanpa batas. |
 | `OWNER_COOKIE_SECRET` | tidak | Kunci tanda tangan cookie pemilik. Kalau kosong, memakai secret server lain. |
 | `CRON_SECRET` | tidak | Kalau diisi, cron memakai `Authorization: Bearer <secret>`. |
 | `SITE_URL` | tidak | URL publik. Di Vercel otomatis dari `VERCEL_PROJECT_PRODUCTION_URL`. |
@@ -89,7 +90,9 @@ sesuai nomor urut. Migrasi aman diulang.
 5. Project yang sudah hilang dari Vercel ditutup oleh sapuan harian
    (`/api/cron/cleanup`).
 
-Batas: deploy 5/jam, upload 20/jam, login admin 10/15 menit, per IP.
+Batas: deploy 5/jam, upload 20/jam, login admin 10/15 menit, per IP. Selain
+itu server menolak deploy setelah `MAX_DEPLOYS_PER_DAY` reservasi dalam 24 jam
+bergulir, agar kuota deployment Vercel tidak habis oleh banyak pengunjung.
 
 ## Deploy ke Vercel
 
