@@ -35,10 +35,10 @@ func main() {
 	mux.HandleFunc("POST /api/deploy", handleDeploy)
 	mux.HandleFunc("POST /api/upload", handleUpload)
 	mux.HandleFunc("GET /api/check-name", handleCheckName)
-	mux.HandleFunc("POST /api/admin/login", handleAdminLoginSubmit)
-	mux.HandleFunc("POST /api/admin/logout", handleAdminLogout)
-	mux.HandleFunc("POST /api/admin/delete", handleAdminDelete)
-	mux.HandleFunc("POST /api/admin/sweep", handleAdminSweep)
+	mux.HandleFunc("POST /api/admin/login", requireSameOrigin(handleAdminLoginSubmit))
+	mux.HandleFunc("POST /api/admin/logout", requireSameOrigin(handleAdminLogout))
+	mux.HandleFunc("POST /api/admin/delete", requireSameOrigin(handleAdminDelete))
+	mux.HandleFunc("POST /api/admin/sweep", requireSameOrigin(handleAdminSweep))
 	mux.HandleFunc("GET /api/cron/cleanup", handleCron)
 	mux.HandleFunc("POST /api/cron/cleanup", handleCron)
 
@@ -67,6 +67,10 @@ func main() {
 		Addr:              ":" + port,
 		Handler:           withSecurityHeaders(mux),
 		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      300 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		MaxHeaderBytes:    1 << 20,
 	}
 	log.Printf("Webiko Deployer listening on :%s", port)
 	log.Fatal(server.ListenAndServe())
@@ -97,6 +101,10 @@ func withSecurityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("Content-Security-Policy", "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'")
+		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()")
+		w.Header().Set("Cross-Origin-Opener-Policy", "same-origin")
+		w.Header().Set("X-Permitted-Cross-Domain-Policies", "none")
 		next.ServeHTTP(w, r)
 	})
 }

@@ -32,8 +32,18 @@ func fromZipBuffer(buffer []byte, label string) ([]DeployFile, error) {
 		return nil, newValidation(label+" tidak bisa dibaca. Pastikan file berformat ZIP.", FieldSource)
 	}
 	files := make([]DeployFile, 0, len(reader.File))
+	if len(reader.File) > maxZipEntries {
+		return nil, newValidation(
+			"ZIP berisi lebih dari "+itoa(maxZipEntries)+" entri. Maksimal "+itoa(maxFiles)+" file.",
+			FieldSource,
+		)
+	}
+	total := 0
 	for _, entry := range reader.File {
 		if entry.FileInfo().IsDir() || strings.HasSuffix(entry.Name, "/") {
+			continue
+		}
+		if entry.UncompressedSize64 == 0 {
 			continue
 		}
 		if entry.UncompressedSize64 > uint64(maxExtractedBytes) {
@@ -42,21 +52,29 @@ func fromZipBuffer(buffer []byte, label string) ([]DeployFile, error) {
 				FieldSource,
 			)
 		}
-		opened, openErr := entry.Open()
-		if openErr != nil {
-			return nil, newValidation(label+" tidak bisa dibaca. Pastikan file berformat ZIP.", FieldSource)
-		}
-		data, readErr := io.ReadAll(io.LimitReader(opened, int64(maxExtractedBytes)+1))
-		opened.Close()
-		if readErr != nil {
-			return nil, newValidation(label+" tidak bisa dibaca. Pastikan file berformat ZIP.", FieldSource)
-		}
-		if len(data) > maxExtractedBytes {
+		if total >= maxExtractedBytes {
 			return nil, newValidation(
 				"Total isi file melebihi "+itoa(maxExtractedBytes/1024/1024)+" MB (anti zip bomb).",
 				FieldSource,
 			)
 		}
+		remaining := int64(maxExtractedBytes - total)
+		opened, openErr := entry.Open()
+		if openErr != nil {
+			return nil, newValidation(label+" tidak bisa dibaca. Pastikan file berformat ZIP.", FieldSource)
+		}
+		data, readErr := io.ReadAll(io.LimitReader(opened, remaining+1))
+		opened.Close()
+		if readErr != nil {
+			return nil, newValidation(label+" tidak bisa dibaca. Pastikan file berformat ZIP.", FieldSource)
+		}
+		if int64(len(data)) > remaining {
+			return nil, newValidation(
+				"Total isi file melebihi "+itoa(maxExtractedBytes/1024/1024)+" MB (anti zip bomb).",
+				FieldSource,
+			)
+		}
+		total += len(data)
 		files = append(files, DeployFile{Path: entry.Name, Data: data})
 	}
 	return validateFiles(stripRoot(files), label)

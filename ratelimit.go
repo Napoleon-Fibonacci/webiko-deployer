@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -29,16 +28,6 @@ var rateLimits = map[string]rateLimitPolicy{
 		Window:  15 * time.Minute,
 		Message: "Terlalu banyak percobaan masuk. Coba lagi nanti.",
 	},
-}
-
-func getClientIP(r *http.Request) string {
-	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
-		return strings.TrimSpace(strings.Split(forwarded, ",")[0])
-	}
-	if realIP := strings.TrimSpace(r.Header.Get("X-Real-IP")); realIP != "" {
-		return realIP
-	}
-	return "unknown"
 }
 
 func windowStartFor(scope string, now time.Time) time.Time {

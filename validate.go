@@ -11,6 +11,7 @@ const (
 	maxNameLength     = 40
 	minNameLength     = 3
 	maxFiles          = 100
+	maxZipEntries     = 500
 	maxZipBytes       = 10 * 1024 * 1024 // 10 MB per ZIP
 	maxExtractedBytes = 50 * 1024 * 1024 // 50 MB, anti zip bomb
 	blobHostSuffix    = ".vercel-storage.com"
