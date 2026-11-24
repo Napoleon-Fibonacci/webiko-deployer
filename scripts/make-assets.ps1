@@ -174,7 +174,7 @@ $g.DrawString("Nama dicek otomatis sebelum deploy.", $subFont, (Brush "#a39d90")
 $g.DrawLine((Pen "#302e29" 2), 112, 524, 1088, 524)
 
 $urlFont = New-Object System.Drawing.Font "Consolas", 23, ([System.Drawing.FontStyle]::Bold), ([System.Drawing.GraphicsUnit]::Pixel)
-$g.DrawString("webiko-deployer.vercel.app", $urlFont, (Brush "#ffe14d"), 112, 540)
+$g.DrawString("deployer.webiko.my.id", $urlFont, (Brush "#ffe14d"), 112, 540)
 
 $footFont = New-Object System.Drawing.Font "Segoe UI", 22, ([System.Drawing.FontStyle]::Regular), ([System.Drawing.GraphicsUnit]::Pixel)
 $g.DrawString("tanpa akun Vercel sendiri", $footFont, (Brush "#a39d90"), 790, 542)
