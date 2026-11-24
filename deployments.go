@@ -566,6 +566,11 @@ func sweepStale(limit int) (SweepResult, error) {
 	if err != nil {
 		return SweepResult{}, err
 	}
+	// The daily sweep also applies the owner-column migration, so an operator
+	// can finish the upgrade by running the cron once.
+	if err = ensureOwnerSchema(db); err != nil {
+		return SweepResult{}, err
+	}
 	if limit < 1 {
 		limit = 10
 	}
