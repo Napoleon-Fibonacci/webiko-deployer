@@ -64,6 +64,9 @@ sesuai nomor urut. Migrasi aman diulang.
 | `BLOB_READ_WRITE_TOKEN` | ya | Token Vercel Blob untuk upload ZIP. |
 | `MAX_PROJECTS` | tidak | Default `180`. |
 | `SITE_TTL_DAYS` | tidak | Umur situs dalam hari. Default `7`, maksimal `30`. |
+| `MAX_SITES_PER_OWNER` | tidak | Situs aktif per browser. Default `2`, maksimal `10`. |
+| `MIN_EVICT_HOURS` | tidak | Umur minimum situs sebelum boleh digeser deploy lain. Default `24`. |
+| `OWNER_COOKIE_SECRET` | tidak | Kunci tanda tangan cookie pemilik. Kalau kosong, memakai secret server lain. |
 | `CRON_SECRET` | tidak | Kalau diisi, cron memakai `Authorization: Bearer <secret>`. |
 | `SITE_URL` | tidak | URL publik. Di Vercel otomatis dari `VERCEL_PROJECT_PRODUCTION_URL`. |
 | `ADMIN_PASSWORD` | tidak | Kosong = menu `/admin` nonaktif. |
@@ -79,8 +82,12 @@ sesuai nomor urut. Migrasi aman diulang.
 3. `POST /api/deploy` memvalidasi isi ZIP (maks 100 file, 50 MB setelah
    ekstrak, wajib `index.html`), memesan slot, membuat deployment Vercel, dan
    mengalirkan progres NDJSON ke browser.
-4. Kalau kapasitas penuh, project tertua dihapus lebih dulu. Project yang sudah
-   hilang dari Vercel ditutup oleh sapuan harian (`/api/cron/cleanup`).
+4. Satu browser maksimal `MAX_SITES_PER_OWNER` situs aktif. Kalau kuota itu
+   penuh, situs tertua milik browser tersebut yang diganti. Kalau kapasitas
+   global penuh, hanya situs berumur minimal `MIN_EVICT_HOURS` yang boleh
+   digeser; kalau belum ada, deploy ditolak dengan pesan kapasitas.
+5. Project yang sudah hilang dari Vercel ditutup oleh sapuan harian
+   (`/api/cron/cleanup`).
 
 Batas: deploy 5/jam, upload 20/jam, login admin 10/15 menit, per IP.
 
@@ -90,8 +97,11 @@ Batas: deploy 5/jam, upload 20/jam, login admin 10/15 menit, per IP.
 2. Di project Vercel, tambahkan **Neon** (Marketplace) dan **Blob** (Storage).
    Store Blob harus **public**, karena server mengambil ZIP dari URL hasil upload.
 3. Set env `VERCEL_TOKEN`, `BLOB_READ_WRITE_TOKEN`, `ADMIN_PASSWORD`, dan
-   opsional `VERCEL_TEAM_ID`, `MAX_PROJECTS`, `SITE_URL`, `CRON_SECRET`.
-4. Jalankan `db/schema.sql` sekali di database Neon.
+   opsional `VERCEL_TEAM_ID`, `MAX_PROJECTS`, `SITE_TTL_DAYS`,
+   `MAX_SITES_PER_OWNER`, `MIN_EVICT_HOURS`, `SITE_URL`, `CRON_SECRET`.
+4. Jalankan `db/schema.sql` sekali di database Neon. Database lama tidak perlu
+   diubah manual: kolom `owner_id` dan indeksnya ditambahkan otomatis saat
+   deploy pertama setelah update ini.
 5. Deploy. `vercel.json` sudah menyetel `"framework": "go"` dan cron harian.
 
 Catatan:

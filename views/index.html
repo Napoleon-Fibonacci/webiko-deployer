@@ -56,7 +56,7 @@
           {{.Site.Name}}
         </a>
         <div class="appbar-side">
-          <div class="capacity">
+          <div class="capacity" title="Maksimal {{maxSitesPerOwner}} situs aktif per browser">
             {{icon "layers" 14 ""}}
             {{if .HasUsed}}<span><strong>{{.Used}}</strong> / {{.Max}} project</span>{{else}}<span>maks {{.Max}} project</span>{{end}}
           </div>
@@ -69,7 +69,7 @@
         <header>
           <p class="label">Deploy statis</p>
           <h1 class="stack-title">Deploy situs ke Vercel</h1>
-          <p class="lead">Isi nama, pilih sumber, lalu deploy. Tanpa akun Vercel sendiri. Tiap situs aktif {{ttlDays}} hari, lalu dihapus otomatis.</p>
+          <p class="lead">Isi nama, pilih sumber, lalu deploy. Tanpa akun Vercel sendiri. Tiap situs aktif {{ttlDays}} hari, lalu dihapus otomatis. Maksimal {{maxSitesPerOwner}} situs per browser.</p>
         </header>
 
         <section class="pane-main">
@@ -203,7 +203,7 @@
               {{end}}
             </ul>
           {{end}}
-          <p class="pane-side-note">Nama disamarkan — dua huruf pertama saja — karena halaman ini publik. Tiap situs aktif sekitar {{ttlDays}} hari sejak deploy, lalu dihapus otomatis. Saat kapasitas penuh, project tertua bisa digeser.</p>
+          <p class="pane-side-note">Nama disamarkan — dua huruf pertama saja — karena halaman ini publik. Tiap situs aktif sekitar {{ttlDays}} hari sejak deploy. Maksimal {{maxSitesPerOwner}} situs per browser; kalau sudah penuh, deploy berikutnya mengganti situs tertua milikmu. Situs orang lain baru bisa digeser setelah {{minEvictHours}} jam.</p>
         </aside>
 
         <section class="guide">
@@ -213,7 +213,7 @@
             <li>Tempel perintah di bawah. Ganti bagian dalam tanda kurung siku dengan maumu — mau web undangan, portofolio, menu jualan, apa saja.</li>
             <li>AI-nya menjawab dengan satu blok kode. Salin semuanya, lalu tempel di kolom <em>Tempel kode</em> di atas — atau simpan jadi berkas <code>index.html</code> lalu unggah lewat tab <em>ZIP</em>.</li>
             <li>Sudah punya kodenya di GitHub, atau berkasnya banyak? Pakai tab <em>GitHub</em> atau <em>ZIP</em>. Tiga jalan itu ujungnya sama.</li>
-            <li>Tekan <strong>Deploy</strong>, tunggu sebentar, dapat link. Tinggal disebar. Situs aktif sekitar {{ttlDays}} hari; setelah itu dihapus agar slot bisa dipakai orang lain.</li>
+            <li>Tekan <strong>Deploy</strong>, tunggu sebentar, dapat link. Tinggal disebar. Situs aktif sekitar {{ttlDays}} hari; setelah itu dihapus agar slot bisa dipakai orang lain. Satu browser maksimal {{maxSitesPerOwner}} situs.</li>
           </ol>
 
           <div class="guide-prompt">

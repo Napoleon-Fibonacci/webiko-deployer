@@ -62,6 +62,39 @@ var site = newSite()
 // column is needed: expiry is derived, and the daily cron deletes overdue rows.
 const defaultSiteTTLDays = 7
 
+const (
+	defaultMaxSitesPerOwner = 2
+	defaultMinEvictHours    = 24
+)
+
+func maxSitesPerOwner() int {
+	raw := strings.TrimSpace(os.Getenv("MAX_SITES_PER_OWNER"))
+	if raw == "" {
+		return defaultMaxSitesPerOwner
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil || value < 1 || value > 10 {
+		return defaultMaxSitesPerOwner
+	}
+	return value
+}
+
+func minEvictHours() int {
+	raw := strings.TrimSpace(os.Getenv("MIN_EVICT_HOURS"))
+	if raw == "" {
+		return defaultMinEvictHours
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil || value < 1 || value > 168 {
+		return defaultMinEvictHours
+	}
+	return value
+}
+
+func minEvictAge() time.Duration {
+	return time.Duration(minEvictHours()) * time.Hour
+}
+
 func siteTTLDays() int {
 	raw := strings.TrimSpace(os.Getenv("SITE_TTL_DAYS"))
 	if raw == "" {

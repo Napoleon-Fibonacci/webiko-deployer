@@ -44,6 +44,9 @@ func handleDeploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set-Cookie has to be queued before the streaming headers go out.
+	ownerID := ensureOwner(w, r)
+
 	w.Header().Set("Content-Type", "application/x-ndjson; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Accel-Buffering", "no")
@@ -120,7 +123,7 @@ func handleDeploy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	stage("slot")
-	reservation, err := reserveSlot(name, payload.Source.Type)
+	reservation, err := reserveSlot(name, payload.Source.Type, ownerID)
 	if err != nil {
 		finish(err)
 		return

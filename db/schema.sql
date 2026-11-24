@@ -8,6 +8,7 @@ CREATE TABLE deployments (
   url                text,
   source_type        text NOT NULL CHECK (source_type IN ('github','zip')),
   status             text NOT NULL CHECK (status IN ('pending','active','deleting','deleted','failed')),
+  owner_id           text,
   created_at         timestamptz NOT NULL DEFAULT now(),
   deleted_at         timestamptz
 );
@@ -20,6 +21,11 @@ CREATE UNIQUE INDEX deployments_name_live
 -- Pencarian project tertua yang aktif.
 CREATE INDEX deployments_oldest
   ON deployments (created_at) WHERE status = 'active';
+
+-- Kuota per browser: cari situs milik satu owner dan hitung yang masih hidup.
+CREATE INDEX deployments_owner_live
+  ON deployments (owner_id, created_at)
+  WHERE status IN ('pending','active','deleting');
 
 -- Rate limit jendela tetap per (scope, IP). Satu tabel untuk semua kebijakan;
 -- scope memisahkan kuota deploy dari kuota percobaan masuk admin.

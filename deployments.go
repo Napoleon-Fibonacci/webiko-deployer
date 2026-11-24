@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"log"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -26,6 +27,10 @@ var statusLabel = map[string]string{
 // A live row uses a slot and locks its name. Stale pending rows do not, so
 // correctness never depends on how often the cron actually runs.
 const liveSQL = `(status IN ('active','deleting') OR (status = 'pending' AND created_at > now() - interval '600 seconds'))`
+
+// Owner quota ignores rows already queued for deletion; those no longer count
+// against the browser's two-site allowance.
+const ownerLiveSQL = `(status = 'active' OR (status = 'pending' AND created_at > now() - interval '600 seconds'))`
 
 const failStaleSQL = `UPDATE deployments SET status = 'failed'
   WHERE status = 'pending' AND created_at <= now() - interval '600 seconds'`
@@ -97,16 +102,64 @@ type DeleteOneResult struct {
 	Outcome string // "done" or "retry"
 }
 
+var (
+	ownerSchemaMu    sync.Mutex
+	ownerSchemaReady bool
+)
+
+// ensureOwnerSchema adds the owner column on first use. The project has no
+// migration runner, and this keeps an older database working after a deploy.
+func ensureOwnerSchema(db *sql.DB) error {
+	ownerSchemaMu.Lock()
+	defer ownerSchemaMu.Unlock()
+	if ownerSchemaReady {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	if _, err := db.ExecContext(ctx,
+		`ALTER TABLE deployments ADD COLUMN IF NOT EXISTS owner_id text`,
+	); err != nil {
+		return err
+	}
+	if _, err := db.ExecContext(ctx,
+		`CREATE INDEX IF NOT EXISTS deployments_owner_live
+		 ON deployments (owner_id, created_at)
+		 WHERE status IN ('pending','active','deleting')`,
+	); err != nil {
+		return err
+	}
+	ownerSchemaReady = true
+	return nil
+}
+
 func isUniqueViolation(err error) bool {
 	var pgErr *pgconn.PgError
 	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }
 
-// reserveSlot creates the pending row under an advisory transaction lock and
-// marks the oldest live project for deletion when the cap is exceeded.
-func reserveSlot(name, sourceType string) (Reservation, error) {
+func capacityFullError() error {
+	return newAppError(http.StatusServiceUnavailable,
+		"Kapasitas penuh dan belum ada situs berumur "+itoa(minEvictHours())+
+			" jam yang bisa digeser. Coba lagi nanti.", FieldSource)
+}
+
+func ownerBusyError() error {
+	return newAppError(http.StatusServiceUnavailable,
+		"Kamu sudah punya "+itoa(maxSitesPerOwner())+
+			" situs dan belum ada yang bisa diganti. Tunggu sebentar lalu coba lagi.", FieldSource)
+}
+
+// reserveSlot creates the pending row under an advisory transaction lock. It
+// first enforces the per-browser quota, replacing that browser's own oldest
+// site, then the global cap, which may only remove a site at least
+// MIN_EVICT_HOURS old.
+func reserveSlot(name, sourceType, ownerID string) (Reservation, error) {
 	db, err := getDB()
 	if err != nil {
+		return Reservation{}, err
+	}
+	if err = ensureOwnerSchema(db); err != nil {
 		return Reservation{}, err
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
@@ -127,8 +180,9 @@ func reserveSlot(name, sourceType string) (Reservation, error) {
 
 	var rowID string
 	err = tx.QueryRowContext(ctx,
-		`INSERT INTO deployments (name, source_type, status) VALUES ($1, $2, 'pending') RETURNING id`,
-		name, sourceType,
+		`INSERT INTO deployments (name, source_type, status, owner_id)
+		 VALUES ($1, $2, 'pending', NULLIF($3, '')) RETURNING id`,
+		name, sourceType, ownerID,
 	).Scan(&rowID)
 	if err != nil {
 		if isUniqueViolation(err) {
@@ -145,25 +199,61 @@ func reserveSlot(name, sourceType string) (Reservation, error) {
 	}
 
 	var victim *ReservedVictim
-	if count > maxProjects() {
-		// Expired sites go first even if a younger site is technically the
-		// global oldest; they were already due for removal anyway.
-		cutoff := time.Now().Add(-siteTTL())
-		row := tx.QueryRowContext(ctx,
+	if ownerID != "" {
+		var owned int
+		if err = tx.QueryRowContext(ctx,
+			`SELECT count(*)::int FROM deployments WHERE owner_id = $1 AND `+ownerLiveSQL,
+			ownerID,
+		).Scan(&owned); err != nil {
+			return Reservation{}, err
+		}
+		if owned > maxSitesPerOwner() {
+			var found ReservedVictim
+			err = tx.QueryRowContext(ctx,
+				`UPDATE deployments SET status = 'deleting'
+				 WHERE id = (
+				   SELECT id FROM deployments
+				   WHERE owner_id = $1 AND status = 'active'
+				   ORDER BY created_at ASC
+				   LIMIT 1
+				   FOR UPDATE SKIP LOCKED
+				 )
+				 RETURNING id, name, vercel_project_id`, ownerID,
+			).Scan(&found.ID, &found.Name, &found.VercelProjectID)
+			if errors.Is(err, sql.ErrNoRows) {
+				return Reservation{}, ownerBusyError()
+			}
+			if err != nil {
+				return Reservation{}, err
+			}
+			victim = &found
+		}
+	}
+
+	if victim == nil && count > maxProjects() {
+		// Candidates must be old enough, so a burst of new sites cannot push
+		// each other out. Expired sites go first; after that, the deploying
+		// browser's own old site is preferred over a stranger's.
+		oldEnough := time.Now().Add(-minEvictAge())
+		expired := time.Now().Add(-siteTTL())
+		var found ReservedVictim
+		err = tx.QueryRowContext(ctx,
 			`UPDATE deployments SET status = 'deleting'
 			 WHERE id = (
 			   SELECT id FROM deployments
-			   WHERE `+liveSQL+` AND status <> 'deleting'
-			   ORDER BY (status = 'active' AND created_at < $1) DESC, created_at ASC
+			   WHERE status = 'active' AND created_at <= $1
+			   ORDER BY (created_at < $3) DESC,
+			            COALESCE(owner_id = $2, false) DESC,
+			            created_at ASC
 			   LIMIT 1
 			   FOR UPDATE SKIP LOCKED
 			 )
-			 RETURNING id, name, vercel_project_id`, cutoff)
-		var found ReservedVictim
-		if err = row.Scan(&found.ID, &found.Name, &found.VercelProjectID); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return Reservation{}, errors.New("batas tercapai tapi tidak ada project hidup untuk dihapus")
-			}
+			 RETURNING id, name, vercel_project_id`, oldEnough, ownerID, expired,
+		).Scan(&found.ID, &found.Name, &found.VercelProjectID)
+		if errors.Is(err, sql.ErrNoRows) {
+			return Reservation{}, capacityFullError()
+		}
+		if err != nil {
 			return Reservation{}, err
 		}
 		victim = &found
