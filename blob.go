@@ -99,7 +99,7 @@ func deleteBlobs(urls []string) error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	resp, err := blobRequest(ctx, http.MethodPost, "/delete", payload)
 	if err != nil {
@@ -156,7 +156,9 @@ func cleanupOrphanBlobs(olderThan time.Duration) (int, error) {
 		return 0, nil
 	}
 	cutoff := time.Now().Add(-olderThan)
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	// Keep the sweep's total runtime bounded: one large page is plenty for
+	// abandoned uploads, and the next run continues where this one stopped.
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	deleted := 0
