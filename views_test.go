@@ -35,6 +35,8 @@ func TestIndexTemplateRenders(t *testing.T) {
 		"si***********<span>.vercel.app</span>",
 		"3 Nov",
 		"/static/app.js",
+		"/icon.svg?v=2",
+		"/favicon.ico?v=2",
 	} {
 		if !strings.Contains(html, want) {
 			t.Errorf("index.html missing %q", want)

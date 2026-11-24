@@ -46,11 +46,12 @@ func main() {
 	mux.HandleFunc("GET /sitemap.xml", handleSitemap)
 	mux.HandleFunc("GET /manifest.webmanifest", handleManifest)
 	mux.HandleFunc("GET /icon.svg", serveEmbedded("web/icon.svg", "image/svg+xml"))
+	mux.HandleFunc("GET /icon-32.png", serveEmbedded("web/icon-32.png", "image/png"))
+	mux.HandleFunc("GET /icon-192.png", serveEmbedded("web/icon-192.png", "image/png"))
+	mux.HandleFunc("GET /icon-512.png", serveEmbedded("web/icon-512.png", "image/png"))
 	mux.HandleFunc("GET /og.png", serveEmbedded("web/og.png", "image/png"))
 	mux.HandleFunc("GET /apple-icon.png", serveEmbedded("web/apple-icon.png", "image/png"))
-	mux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/icon.svg", http.StatusMovedPermanently)
-	})
+	mux.HandleFunc("GET /favicon.ico", serveEmbedded("web/favicon.ico", "image/x-icon"))
 
 	webFS, err := fs.Sub(content, "web")
 	if err != nil {
