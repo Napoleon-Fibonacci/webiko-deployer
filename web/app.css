@@ -1834,14 +1834,14 @@ h3 {
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(10, 10, 9, 0.55);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(10, 10, 9, 0.45);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
 }
 
 .modal-card {
   position: relative;
-  width: min(440px, 100%);
+  width: min(420px, 100%);
   display: grid;
   gap: 12px;
   justify-items: center;
@@ -1850,7 +1850,7 @@ h3 {
   border: 1px solid var(--accent-line);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lift);
-  padding: 30px 26px 26px;
+  padding: 28px 24px 24px;
 }
 
 .modal-mark {
@@ -1895,5 +1895,18 @@ h3 {
 }
 
 .modal-close:hover {
+  color: var(--ink);
+}
+
+.modal-skip {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.modal-skip:hover {
   color: var(--ink);
 }

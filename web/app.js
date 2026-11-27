@@ -989,9 +989,11 @@
   function initDonate() {
     var modal = byId("donate-modal");
     if (modal) {
-      byId("donate-close").addEventListener("click", function () {
+      var hide = function () {
         modal.hidden = true;
-      });
+      };
+      byId("donate-close").addEventListener("click", hide);
+      byId("donate-skip").addEventListener("click", hide);
     }
 
     var form = byId("donate-form");
