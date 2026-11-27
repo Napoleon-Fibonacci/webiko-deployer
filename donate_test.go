@@ -64,3 +64,28 @@ func TestHandleDonateInvalidBody(t *testing.T) {
 		t.Fatalf("status = %d, want 400", rec.Code)
 	}
 }
+
+func TestHandleDonatePage(t *testing.T) {
+	t.Setenv("TELEGRAM_BOT_TOKEN", "token")
+	t.Setenv("TELEGRAM_CHAT_ID", "123")
+	req := httptest.NewRequest("GET", "/donasi", nil)
+	rec := httptest.NewRecorder()
+	handleDonatePage(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), `id="donate-form"`) {
+		t.Fatal("formulir donasi tidak tampil di /donasi")
+	}
+}
+
+func TestHandleDonatePageDisabled(t *testing.T) {
+	t.Setenv("TELEGRAM_BOT_TOKEN", "")
+	t.Setenv("TELEGRAM_CHAT_ID", "")
+	req := httptest.NewRequest("GET", "/donasi", nil)
+	rec := httptest.NewRecorder()
+	handleDonatePage(rec, req)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303", rec.Code)
+	}
+}

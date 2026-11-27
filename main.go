@@ -28,6 +28,7 @@ func main() {
 		http.Redirect(w, r, "/admin", http.StatusMovedPermanently)
 	})
 	mux.HandleFunc("GET /admin/login", handleAdminLogin)
+	mux.HandleFunc("GET /donasi", handleDonatePage)
 	mux.HandleFunc("GET /admin/login/{$}", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin/login", http.StatusMovedPermanently)
 	})

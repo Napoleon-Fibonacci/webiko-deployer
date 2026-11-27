@@ -69,6 +69,8 @@ func iconSVG(name string, data iconData) template.HTML {
 		return strokeIcon(`<path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/>`)
 	case "rocket":
 		return strokeIcon(`<circle cx="12" cy="12" r="9"/><path d="M12 16V8"/><path d="m8 12 4-4 4 4"/>`)
+	case "heart":
+		return fillIcon(`<path d="M12 21s-7.5-4.6-9.5-9.2C1 8 3 4.5 6.5 4.5c2 0 3.5 1 4.5 2.6 1-1.6 2.5-2.6 4.5-2.6C19 4.5 21 8 19.5 11.8 17.5 16.4 12 21 12 21z"/>`)
 	default:
 		return strokeIcon("")
 	}

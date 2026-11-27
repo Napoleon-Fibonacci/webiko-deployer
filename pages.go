@@ -55,6 +55,19 @@ type loginData struct {
 	SessionTime int
 }
 
+type donateData struct {
+	Site Site
+}
+
+func handleDonatePage(w http.ResponseWriter, r *http.Request) {
+	if !donateEnabled() {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	render(w, "donate.html", donateData{Site: site}, http.StatusOK)
+}
+
 func handleHome(w http.ResponseWriter, r *http.Request) {
 	used := 0
 	hasUsed := false

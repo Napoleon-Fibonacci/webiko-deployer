@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="{{.Site.Lang}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Donasi — {{.Site.Name}}</title>
+  <meta name="description" content="Donasikan kunci API Vercel agar Webiko Deployer tetap hidup.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="/favicon.ico?v=2" sizes="32x32">
+  <link rel="icon" href="/icon-32.png?v=2" type="image/png" sizes="32x32">
+  <link rel="icon" href="/icon.svg?v=2" type="image/svg+xml" sizes="any">
+  <meta name="theme-color" content="{{.Site.ThemeColor}}">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <div aria-hidden="true" class="bg-grid"></div>
+
+  <div class="app">
+    <header class="appbar">
+      <div class="appbar-inner">
+        <a class="wordmark" href="/"><span class="wordmark-mark" aria-hidden="true">W</span>{{.Site.Name}}</a>
+        <div class="appbar-side">
+          <a class="btn-ghost" href="/">{{icon "rocket" 15 ""}} Deployer</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <section class="admin-login reveal">
+        <span class="login-mark" aria-hidden="true">{{icon "heart" 20 ""}}</span>
+        <h1 class="stack-title">Donasi kunci API Vercel</h1>
+        <p class="lead">Webiko Deployer gratis dibiayai token API Vercel pemilik. Punya token menganggur? Kirim lewat formulir ini — diteruskan ke pemilik via Telegram, tidak disimpan di server.</p>
+
+        <form id="donate-form" class="field" novalidate>
+          <label class="field-label" for="donate-name">Nama</label>
+          <input class="input" id="donate-name" type="text" placeholder="Nama (opsional)" maxlength="60" autocomplete="name">
+
+          <label class="field-label" for="donate-key">Kunci API Vercel</label>
+          <input class="input font-mono" id="donate-key" type="password" placeholder="Tempel kunci API Vercel" maxlength="512" required>
+
+          <label class="field-label" for="donate-note">Catatan</label>
+          <input class="input" id="donate-note" type="text" placeholder="Catatan (opsional)" maxlength="200">
+
+          <p class="field-error shake" id="donate-error" role="alert" hidden></p>
+
+          <div class="login-actions">
+            <button class="btn-primary login-submit" type="submit" id="donate-submit">{{icon "heart" 15 ""}} Kirim via Telegram</button>
+          </div>
+        </form>
+
+        <p class="login-foot" id="donate-status" role="status" aria-live="polite"></p>
+        <p class="login-foot">Kunci dikirim langsung ke Telegram pemilik situs ini. Setelah dipakai, minta token baru di Vercel lalu hapus yang lama. Situs donatur kebal pergeseran slot dan masa aktif 7 hari.</p>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/vendor/fflate.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -69,17 +69,14 @@
     <main class="app-main">
       <div class="stack reveal">
         {{if .DonateEnabled}}
-        <div class="banner" id="donate-banner">
-          <button class="banner-close" id="donate-close" type="button" aria-label="Tutup banner donasi">{{icon "x" 14 ""}}</button>
-          <p class="banner-text"><strong>Webiko Deployer gratis berkat token API Vercel milik pemilik.</strong> Punya token Vercel yang menganggur? Donasikan lewat formulir ini — diteruskan langsung ke pemilik lewat Telegram, tanpa disimpan di server.</p>
-          <form class="banner-form" id="donate-form" novalidate>
-            <input class="input" id="donate-name" type="text" placeholder="Nama (opsional)" maxlength="60" autocomplete="name">
-            <input class="input font-mono" id="donate-key" type="password" placeholder="Kunci API Vercel" maxlength="512" required>
-            <input class="input" id="donate-note" type="text" placeholder="Catatan (opsional)" maxlength="200">
-            <button class="btn-primary" type="submit" id="donate-submit">Kirim via Telegram</button>
-          </form>
-          <p class="banner-note">Kunci dikirim langsung ke Telegram pemilik situs ini. Setelah dipakai, minta token baru di Vercel lalu hapus yang lama.</p>
-          <p class="banner-status" id="donate-status" role="status" aria-live="polite"></p>
+        <div class="modal-overlay" id="donate-modal" role="dialog" aria-modal="true" aria-labelledby="donate-modal-title">
+          <div class="modal-card">
+            <button class="modal-close" id="donate-close" type="button" aria-label="Tutup kabar donasi">{{icon "x" 14 ""}}</button>
+            <span class="modal-mark" aria-hidden="true">{{icon "heart" 22 ""}}</span>
+            <h2 class="modal-title" id="donate-modal-title">INFORMASI</h2>
+            <p class="modal-text"><strong>Webiko Deployer gratis.</strong> Server dijalankan dengan token API Vercel milik pemilik. Punya token Vercel yang menganggur? Donasikan lewat halaman donasi — diteruskan ke pemilik via Telegram, tanpa disimpan di server.</p>
+            <a class="btn-primary modal-btn" href="/donasi">{{icon "heart" 15 ""}} Buka halaman donasi</a>
+          </div>
         </div>
         {{end}}
 

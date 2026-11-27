@@ -983,31 +983,35 @@
   }
 
   // ---------------------------------------------------------------------
-  // Banner donasi API key
+  // Modal dan halaman donasi API key
   // ---------------------------------------------------------------------
 
   function initDonate() {
-    var banner = byId("donate-banner");
-    if (!banner) return;
+    var modal = byId("donate-modal");
+    if (modal) {
+      byId("donate-close").addEventListener("click", function () {
+        modal.hidden = true;
+      });
+    }
 
     var form = byId("donate-form");
+    if (!form) return;
+
     var status = byId("donate-status");
     var keyInput = byId("donate-key");
     var button = byId("donate-submit");
-
-    byId("donate-close").addEventListener("click", function () {
-      banner.hidden = true;
-    });
+    var error = byId("donate-error");
 
     form.addEventListener("submit", function (event) {
       event.preventDefault();
       var key = keyInput.value.trim();
       if (!key) {
-        status.textContent = "Kunci API Vercel wajib diisi.";
-        status.className = "banner-status is-error";
+        error.textContent = "Kunci API Vercel wajib diisi.";
+        error.hidden = false;
         keyInput.focus();
         return;
       }
+      error.hidden = true;
       button.disabled = true;
       fetch("/api/donate", {
         method: "POST",
@@ -1028,16 +1032,16 @@
         .then(function (result) {
           if (result.ok) {
             status.textContent = "Terima kasih. Kunci sudah diteruskan ke pemilik.";
-            status.className = "banner-status is-ok";
+            status.style.color = "var(--ok)";
             form.reset();
           } else {
-            status.textContent = (result.payload && result.payload.error) || GENERIC_MESSAGE;
-            status.className = "banner-status is-error";
+            error.textContent = (result.payload && result.payload.error) || GENERIC_MESSAGE;
+            error.hidden = false;
           }
         })
         .catch(function () {
-          status.textContent = GENERIC_MESSAGE;
-          status.className = "banner-status is-error";
+          error.textContent = GENERIC_MESSAGE;
+          error.hidden = false;
         })
         .finally(function () {
           button.disabled = false;

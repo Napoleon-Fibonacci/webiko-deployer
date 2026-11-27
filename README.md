@@ -27,7 +27,7 @@ pool.go               Pool kunci API Vercel terenkripsi (AES-GCM), picker
 keys.go               Menu kunci pool di dashboard admin
 db.go                 Koneksi Postgres (pgx)
 views.go / util.go    Template funcs, ikon SVG, format tanggal
-views/                index.html, admin.html, login.html
+views/                index.html, admin.html, login.html, donate.html
 web/                  app.css, app.js, vendor/fflate.js, ikon + og.png
 db/schema.sql         Skema Neon Postgres
 db/migrations/        Migrasi untuk database lama
@@ -104,12 +104,12 @@ itu server menolak deploy setelah `MAX_DEPLOYS_PER_DAY` reservasi dalam 24 jam
 bergulir, agar kuota deployment Vercel tidak habis oleh banyak pengunjung.
 
 Kalau `TELEGRAM_BOT_TOKEN` dan `TELEGRAM_CHAT_ID` diisi, halaman depan
-menampilkan banner donasi kunci API Vercel. Formulir menyimpan kunci sebagai
-pending terenkripsi + meneruskan ke bot Telegram pemilik (`POST /api/donate`).
-Pemilik mengaktifkan kunci dari dashboard `/admin`; kunci aktif dipakai
-bergiliran saat deploy (yang paling jarang dipakai duluan), dan situs donatur
-kebal pergeseran slot serta TTL. `VERCEL_TOKEN` tetap jadi cadangan saat pool
-kosong.
+menampilkan modal donasi (latar buram) dengan tautan ke `/donasi`. Formulir
+di sana menyimpan kunci sebagai pending terenkripsi + meneruskan ke bot
+Telegram pemilik (`POST /api/donate`). Pemilik mengaktifkan kunci dari
+dashboard `/admin`; kunci aktif dipakai bergiliran saat deploy (yang paling
+jarang dipakai duluan), dan situs donatur kebal pergeseran slot serta TTL.
+`VERCEL_TOKEN` tetap jadi cadangan saat pool kosong.
 
 ## Deploy ke Vercel
 
