@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -130,7 +132,17 @@ func handleDeploy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	stage("slot")
-	reservation, err := reserveSlot(name, payload.Source.Type, ownerID)
+	// Kunci pool dipilih sebelum slot dipesan, lalu dicatat di baris deploy.
+	// Pool kosong atau database down = fallback ke VERCEL_TOKEN seperti biasa.
+	keyID, vercelToken, err := pickAPIKey()
+	if err != nil {
+		log.Printf("pick api key: %v", err)
+	}
+	if vercelToken == "" {
+		vercelToken = strings.TrimSpace(os.Getenv("VERCEL_TOKEN"))
+		keyID = ""
+	}
+	reservation, err := reserveSlot(name, payload.Source.Type, ownerID, keyID)
 	if err != nil {
 		finish(err)
 		return
@@ -142,7 +154,7 @@ func handleDeploy(w http.ResponseWriter, r *http.Request) {
 	// Build the replacement before removing anything. The victim's Vercel
 	// project is deleted only after the new deployment is active, so a Vercel
 	// failure cannot leave the visitor with neither site.
-	result, err := createDeployment(name, files)
+	result, err := createDeployment(name, files, vercelToken)
 	if err != nil {
 		finish(err)
 		return
@@ -151,7 +163,7 @@ func handleDeploy(w http.ResponseWriter, r *http.Request) {
 	// instead of handing out a confusing URL: delete the temporary project and
 	// ask the visitor to pick another name.
 	if result.Renamed {
-		if deleteErr := deleteVercelProject(result.ProjectID); deleteErr != nil {
+		if deleteErr := deleteVercelProject(result.ProjectID, vercelToken); deleteErr != nil {
 			log.Printf("cleanup rejected project %s: %v", result.ProjectID, deleteErr)
 		}
 		finish(newNameTaken())
@@ -160,7 +172,7 @@ func handleDeploy(w http.ResponseWriter, r *http.Request) {
 	if err = markActive(rowID, result.ProjectID, result.URL); err != nil {
 		// The project exists but could not be recorded, so remove it to avoid
 		// an orphan and restore the old project.
-		if deleteErr := deleteVercelProject(result.ProjectID); deleteErr != nil {
+		if deleteErr := deleteVercelProject(result.ProjectID, vercelToken); deleteErr != nil {
 			log.Printf("cleanup unrecorded project %s: %v", result.ProjectID, deleteErr)
 		}
 		finish(err)
@@ -171,7 +183,7 @@ func handleDeploy(w http.ResponseWriter, r *http.Request) {
 		old := victim
 		victim = nil
 		if old.VercelProjectID.Valid && old.VercelProjectID.String != "" {
-			if deleteErr := deleteVercelProject(old.VercelProjectID.String); deleteErr != nil {
+			if deleteErr := deleteVercelProject(old.VercelProjectID.String, tokenForDeployment(old.APIKeyID)); deleteErr != nil {
 				// The new site is already live; keep the old one running too
 				// instead of marking a live project as deleted. A later deploy
 				// or the daily sweep can retry.

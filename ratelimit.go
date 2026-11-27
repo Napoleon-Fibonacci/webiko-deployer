@@ -33,6 +33,11 @@ var rateLimits = map[string]rateLimitPolicy{
 		Window:  time.Hour,
 		Message: "Terlalu banyak percobaan kode akses. Coba lagi dalam satu jam.",
 	},
+	"donate": {
+		Max:     5,
+		Window:  time.Hour,
+		Message: "Terlalu banyak kiriman donasi. Coba lagi dalam satu jam.",
+	},
 }
 
 func windowStartFor(scope string, now time.Time) time.Time {

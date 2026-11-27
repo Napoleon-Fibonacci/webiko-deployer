@@ -25,8 +25,8 @@ type CreateDeploymentResult struct {
 	Renamed      bool
 }
 
-func vercelHeaders() (http.Header, error) {
-	token := strings.TrimSpace(os.Getenv("VERCEL_TOKEN"))
+func vercelHeadersFor(token string) (http.Header, error) {
+	token = strings.TrimSpace(token)
 	if token == "" {
 		return nil, newVercelAPI("VERCEL_TOKEN belum diset di server.", http.StatusBadGateway)
 	}
@@ -48,8 +48,8 @@ func withTeam(rawURL string) string {
 	return rawURL + separator + "teamId=" + url.QueryEscape(teamID)
 }
 
-func vercelDo(ctx context.Context, method, rawURL string, body io.Reader) (*http.Response, error) {
-	headers, err := vercelHeaders()
+func vercelDo(ctx context.Context, method, rawURL string, body io.Reader, token string) (*http.Response, error) {
+	headers, err := vercelHeadersFor(token)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func parseVercelError(resp *http.Response, fallback string) error {
 	return newVercelAPI(fallback, http.StatusBadGateway)
 }
 
-func createDeployment(name string, files []DeployFile) (CreateDeploymentResult, error) {
+func createDeployment(name string, files []DeployFile, token string) (CreateDeploymentResult, error) {
 	type vercelFile struct {
 		File     string `json:"file"`
 		Data     string `json:"data"`
@@ -104,7 +104,7 @@ func createDeployment(name string, files []DeployFile) (CreateDeploymentResult, 
 	defer cancel()
 	resp, err := vercelDo(ctx, http.MethodPost,
 		withTeam(vercelAPI+"/v13/deployments?skipAutoDetectionConfirmation=1"),
-		bytes.NewReader(body))
+		bytes.NewReader(body), token)
 	if err != nil {
 		return CreateDeploymentResult{}, newVercelAPI("Deploy gagal di sisi Vercel.", http.StatusBadGateway)
 	}
@@ -119,7 +119,7 @@ func createDeployment(name string, files []DeployFile) (CreateDeploymentResult, 
 		return CreateDeploymentResult{}, newVercelAPI("Deploy gagal di sisi Vercel.", http.StatusBadGateway)
 	}
 
-	final, err := pollDeployment(created.ID)
+	final, err := pollDeployment(created.ID, token)
 	if err != nil {
 		return CreateDeploymentResult{}, err
 	}
@@ -129,7 +129,7 @@ func createDeployment(name string, files []DeployFile) (CreateDeploymentResult, 
 	if final.ProjectID == "" {
 		return CreateDeploymentResult{}, newVercelAPI("Deploy gagal di sisi Vercel (URL tidak ditemukan).", http.StatusBadGateway)
 	}
-	publicURL, err := resolvePublicURL(final, name)
+	publicURL, err := resolvePublicURL(final, name, token)
 	if err != nil {
 		return CreateDeploymentResult{}, err
 	}
@@ -152,12 +152,12 @@ type deploymentState struct {
 	URL        string   `json:"url"`
 }
 
-func pollDeployment(deploymentID string) (deploymentState, error) {
+func pollDeployment(deploymentID, token string) (deploymentState, error) {
 	deadline := time.Now().Add(55 * time.Second)
 	for time.Now().Before(deadline) {
 		ctx, cancel := context.WithTimeout(context.Background(), 16*time.Second)
 		resp, err := vercelDo(ctx, http.MethodGet,
-			withTeam(vercelAPI+"/v13/deployments/"+url.PathEscape(deploymentID)), nil)
+			withTeam(vercelAPI+"/v13/deployments/"+url.PathEscape(deploymentID)), nil, token)
 		if err != nil {
 			cancel()
 			return deploymentState{}, newVercelAPI("Gagal membaca status deployment.", http.StatusBadGateway)
@@ -205,8 +205,8 @@ func pickHost(hosts []string, name string) string {
 	return ""
 }
 
-func getVercelJSON(ctx context.Context, path string, target any) bool {
-	resp, err := vercelDo(ctx, http.MethodGet, withTeam(vercelAPI+path), nil)
+func getVercelJSON(ctx context.Context, path string, target any, token string) bool {
+	resp, err := vercelDo(ctx, http.MethodGet, withTeam(vercelAPI+path), nil, token)
 	if err != nil {
 		return false
 	}
@@ -219,7 +219,7 @@ func getVercelJSON(ctx context.Context, path string, target any) bool {
 
 // productionHosts gathers aliases from three Vercel endpoints; any of them
 // can be empty for a moment right after READY.
-func productionHosts(deployment deploymentState) []string {
+func productionHosts(deployment deploymentState, token string) []string {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
@@ -244,17 +244,17 @@ func productionHosts(deployment deploymentState) []string {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		getVercelJSON(ctx, "/v13/deployments/"+url.PathEscape(deployment.ID), &fresh)
+		getVercelJSON(ctx, "/v13/deployments/"+url.PathEscape(deployment.ID), &fresh, token)
 	}()
 	if deployment.ProjectID != "" {
 		wg.Add(2)
 		go func() {
 			defer wg.Done()
-			getVercelJSON(ctx, "/v9/projects/"+url.PathEscape(deployment.ProjectID), &project)
+			getVercelJSON(ctx, "/v9/projects/"+url.PathEscape(deployment.ProjectID), &project, token)
 		}()
 		go func() {
 			defer wg.Done()
-			getVercelJSON(ctx, "/v9/projects/"+url.PathEscape(deployment.ProjectID)+"/domains?production=true", &domains)
+			getVercelJSON(ctx, "/v9/projects/"+url.PathEscape(deployment.ProjectID)+"/domains?production=true", &domains, token)
 		}()
 	}
 	wg.Wait()
@@ -270,9 +270,9 @@ func productionHosts(deployment deploymentState) []string {
 	return hosts
 }
 
-func resolvePublicURL(deployment deploymentState, name string) (string, error) {
+func resolvePublicURL(deployment deploymentState, name, token string) (string, error) {
 	for attempt := 0; attempt < 2; attempt++ {
-		if host := pickHost(productionHosts(deployment), name); host != "" {
+		if host := pickHost(productionHosts(deployment, token), name); host != "" {
 			return "https://" + host, nil
 		}
 		if attempt == 0 {
@@ -285,11 +285,11 @@ func resolvePublicURL(deployment deploymentState, name string) (string, error) {
 	return "", nil
 }
 
-func deleteVercelProject(projectID string) error {
+func deleteVercelProject(projectID, token string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 35*time.Second)
 	defer cancel()
 	resp, err := vercelDo(ctx, http.MethodDelete,
-		withTeam(vercelAPI+"/v9/projects/"+url.PathEscape(projectID)), nil)
+		withTeam(vercelAPI+"/v9/projects/"+url.PathEscape(projectID)), nil, token)
 	if err != nil {
 		return newVercelAPI("Gagal menghapus project lama di Vercel.", http.StatusBadGateway)
 	}
@@ -302,11 +302,11 @@ func deleteVercelProject(projectID string) error {
 
 // projectExists returns false only on a confident 404. Network failures, 403,
 // 429 and 5xx stay unknown so a possibly-live site is never freed by mistake.
-func projectExists(projectID string) (exists *bool, err error) {
+func projectExists(projectID, token string) (exists *bool, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 16*time.Second)
 	defer cancel()
 	resp, err := vercelDo(ctx, http.MethodGet,
-		withTeam(vercelAPI+"/v9/projects/"+url.PathEscape(projectID)), nil)
+		withTeam(vercelAPI+"/v9/projects/"+url.PathEscape(projectID)), nil, token)
 	if err != nil {
 		return nil, err
 	}

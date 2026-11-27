@@ -39,6 +39,10 @@ func main() {
 	mux.HandleFunc("POST /api/admin/logout", requireSameOrigin(handleAdminLogout))
 	mux.HandleFunc("POST /api/admin/delete", requireSameOrigin(handleAdminDelete))
 	mux.HandleFunc("POST /api/admin/sweep", requireSameOrigin(handleAdminSweep))
+	mux.HandleFunc("POST /api/admin/key/toggle", requireSameOrigin(handleAdminKeyToggle))
+	mux.HandleFunc("POST /api/admin/key/delete", requireSameOrigin(handleAdminKeyDelete))
+	mux.HandleFunc("POST /api/admin/key/add", requireSameOrigin(handleAdminKeyAdd))
+	mux.HandleFunc("POST /api/donate", requireSameOrigin(handleDonate))
 	mux.HandleFunc("GET /api/cron/cleanup", handleCron)
 	mux.HandleFunc("POST /api/cron/cleanup", handleCron)
 

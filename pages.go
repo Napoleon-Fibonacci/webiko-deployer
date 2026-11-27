@@ -17,6 +17,7 @@ type pageData struct {
 	Max                int
 	Remaining          int
 	AccessCodeRequired bool
+	DonateEnabled      bool
 	Rows               []ActiveRow
 	JSONLD             template.JS
 }
@@ -44,6 +45,7 @@ type adminData struct {
 	Limit       int
 	AdminError  bool
 	CronMissing bool
+	Keys        []APIKeyRow
 }
 
 type loginData struct {
@@ -107,6 +109,7 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 		Max:                maximum,
 		Remaining:          remaining,
 		AccessCodeRequired: accessCodeRequired(),
+		DonateEnabled:      donateEnabled(),
 		Rows:               rows,
 		JSONLD:             jsonForScript(jsonLD),
 	}, http.StatusOK)
@@ -130,6 +133,10 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	search := strings.TrimSpace(query.Get("q"))
 
 	list, err := listForAdmin(AdminFilter{Status: status, Query: search}, 100)
+	keys, keyErr := listAPIKeys()
+	if keyErr != nil {
+		keys = nil
+	}
 	data := adminData{
 		Site:        site,
 		Status:      status,
@@ -138,6 +145,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		Flash:       flashFromQuery(query),
 		AdminError:  err != nil,
 		CronMissing: strings.TrimSpace(os.Getenv("CRON_SECRET")) == "",
+		Keys:        keys,
 	}
 	if err == nil {
 		data.Rows = list.Rows
@@ -356,6 +364,12 @@ func flashFromQuery(query url.Values) *flashMessage {
 	}
 	if query.Get("missing") == "1" {
 		return &flashMessage{Tone: "err", Text: "Baris itu sudah tidak ada."}
+	}
+	if query.Get("keys") == "1" {
+		return &flashMessage{Tone: "ok", Text: "Kunci API diperbarui."}
+	}
+	if query.Get("keys") == "0" {
+		return &flashMessage{Tone: "err", Text: "Kunci API gagal diperbarui. Coba lagi."}
 	}
 	if query.Get("fail") == "1" {
 		return &flashMessage{Tone: "err", Text: "Hapus gagal dijalankan. Coba lagi."}

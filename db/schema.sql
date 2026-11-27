@@ -39,3 +39,23 @@ CREATE TABLE rate_limits (
   count          int NOT NULL DEFAULT 0,
   PRIMARY KEY (scope, ip, window_start)
 );
+
+-- Kunci API Vercel yang didonasikan lewat banner halaman depan. Token disimpan
+-- terenkripsi (AES-GCM, kunci dari env POOL_SECRET). active = false berarti
+-- menunggu aktivasi admin dari dashboard /admin.
+CREATE TABLE api_keys (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  token           text NOT NULL,
+  label           text,
+  donor_owner_id  text,
+  uses            integer NOT NULL DEFAULT 0,
+  active          boolean NOT NULL DEFAULT false,
+  created_at      timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX api_keys_active_uses ON api_keys (uses) WHERE active;
+
+-- Deploy mencatat kunci pool yang dipakai, agar penghapusan project di Vercel
+-- memakai token yang sama dengan saat pembuatan.
+ALTER TABLE deployments ADD COLUMN IF NOT EXISTS api_key_id uuid
+  REFERENCES api_keys (id) ON DELETE SET NULL;

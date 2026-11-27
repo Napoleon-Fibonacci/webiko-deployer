@@ -13,6 +13,7 @@ const (
 	FieldName   ErrorField = "name"
 	FieldSource ErrorField = "source"
 	FieldAccess ErrorField = "access"
+	FieldDonate ErrorField = "donate"
 )
 
 // AppError carries an HTTP status and the form field to highlight, so no

@@ -44,15 +44,24 @@ const pruneRateLimitsSQL = `DELETE FROM rate_limits
 const expireOverdueSQL = `UPDATE deployments SET status = 'deleting'
   WHERE id IN (
     SELECT id FROM deployments
-    WHERE status = 'active' AND created_at < $1
+    WHERE status = 'active' AND created_at < $1 ` + donorImmuneSQL + `
     ORDER BY created_at ASC
     LIMIT $2
+  )`
+
+// donorImmuneSQL mengecualikan situs milik donor aktif dari pergeseran slot
+// dan penghapusan TTL. Imbalan kunci API Vercel yang didonasikan.
+const donorImmuneSQL = `AND NOT EXISTS (
+    SELECT 1 FROM api_keys k
+    WHERE k.active AND k.donor_owner_id IS NOT NULL
+      AND k.donor_owner_id = deployments.owner_id
   )`
 
 type ReservedVictim struct {
 	ID              string
 	Name            string
 	VercelProjectID sql.NullString
+	APIKeyID        sql.NullString
 }
 
 type Reservation struct {
@@ -159,7 +168,7 @@ func dailyDeployError() error {
 // first enforces the per-browser quota, replacing that browser's own oldest
 // site, then the global cap, which may only remove a site at least
 // MIN_EVICT_HOURS old.
-func reserveSlot(name, sourceType, ownerID string) (Reservation, error) {
+func reserveSlot(name, sourceType, ownerID, apiKeyID string) (Reservation, error) {
 	db, err := getDB()
 	if err != nil {
 		return Reservation{}, err
@@ -200,9 +209,9 @@ func reserveSlot(name, sourceType, ownerID string) (Reservation, error) {
 
 	var rowID string
 	err = tx.QueryRowContext(ctx,
-		`INSERT INTO deployments (name, source_type, status, owner_id)
-		 VALUES ($1, $2, 'pending', NULLIF($3, '')) RETURNING id`,
-		name, sourceType, ownerID,
+		`INSERT INTO deployments (name, source_type, status, owner_id, api_key_id)
+		 VALUES ($1, $2, 'pending', NULLIF($3, ''), NULLIF($4, '')) RETURNING id`,
+		name, sourceType, ownerID, apiKeyID,
 	).Scan(&rowID)
 	if err != nil {
 		if isUniqueViolation(err) {
@@ -233,13 +242,13 @@ func reserveSlot(name, sourceType, ownerID string) (Reservation, error) {
 				`UPDATE deployments SET status = 'deleting'
 				 WHERE id = (
 				   SELECT id FROM deployments
-				   WHERE owner_id = $1 AND status = 'active'
+				   WHERE owner_id = $1 AND status = 'active' `+donorImmuneSQL+`
 				   ORDER BY created_at ASC
 				   LIMIT 1
 				   FOR UPDATE SKIP LOCKED
 				 )
-				 RETURNING id, name, vercel_project_id`, ownerID,
-			).Scan(&found.ID, &found.Name, &found.VercelProjectID)
+				 RETURNING id, name, vercel_project_id, api_key_id`, ownerID,
+			).Scan(&found.ID, &found.Name, &found.VercelProjectID, &found.APIKeyID)
 			if errors.Is(err, sql.ErrNoRows) {
 				return Reservation{}, ownerBusyError()
 			}
@@ -261,15 +270,15 @@ func reserveSlot(name, sourceType, ownerID string) (Reservation, error) {
 			`UPDATE deployments SET status = 'deleting'
 			 WHERE id = (
 			   SELECT id FROM deployments
-			   WHERE status = 'active' AND created_at <= $1
+			   WHERE status = 'active' AND created_at <= $1 `+donorImmuneSQL+`
 			   ORDER BY (created_at < $3) DESC,
 			            COALESCE(owner_id = $2, false) DESC,
 			            created_at ASC
 			   LIMIT 1
 			   FOR UPDATE SKIP LOCKED
 			 )
-			 RETURNING id, name, vercel_project_id`, oldEnough, ownerID, expired,
-		).Scan(&found.ID, &found.Name, &found.VercelProjectID)
+			 RETURNING id, name, vercel_project_id, api_key_id`, oldEnough, ownerID, expired,
+		).Scan(&found.ID, &found.Name, &found.VercelProjectID, &found.APIKeyID)
 		if errors.Is(err, sql.ErrNoRows) {
 			return Reservation{}, capacityFullError()
 		}
@@ -327,10 +336,11 @@ func deleteOne(rowID string) (DeleteOneResult, error) {
 		Name            string
 		Status          string
 		VercelProjectID sql.NullString
+		APIKeyID        sql.NullString
 	}
 	err = db.QueryRowContext(ctx,
-		`SELECT name, status, vercel_project_id FROM deployments WHERE id = $1`, rowID,
-	).Scan(&row.Name, &row.Status, &row.VercelProjectID)
+		`SELECT name, status, vercel_project_id, api_key_id FROM deployments WHERE id = $1`, rowID,
+	).Scan(&row.Name, &row.Status, &row.VercelProjectID, &row.APIKeyID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return DeleteOneResult{}, newAppError(404, "Baris tidak ditemukan.", FieldSource)
 	}
@@ -344,7 +354,7 @@ func deleteOne(rowID string) (DeleteOneResult, error) {
 		return DeleteOneResult{}, err
 	}
 	if row.VercelProjectID.Valid && row.VercelProjectID.String != "" {
-		if err = deleteVercelProject(row.VercelProjectID.String); err != nil {
+		if err = deleteVercelProject(row.VercelProjectID.String, tokenForDeployment(row.APIKeyID)); err != nil {
 			return DeleteOneResult{Name: row.Name, Outcome: "retry"}, nil
 		}
 	}
@@ -507,18 +517,22 @@ func reconcileGone(limit int) (int, error) {
 	defer cancel()
 
 	rows, err := db.QueryContext(ctx,
-		`SELECT id, vercel_project_id FROM deployments
+		`SELECT id, vercel_project_id, api_key_id FROM deployments
 		 WHERE status = 'active' AND vercel_project_id IS NOT NULL
 		 ORDER BY created_at ASC LIMIT $1`, limit)
 	if err != nil {
 		return 0, err
 	}
-	type pair struct{ ID, ProjectID string }
+	type pair struct {
+		ID        string
+		ProjectID string
+		APIKeyID  sql.NullString
+	}
 	var items []pair
 	for rows.Next() {
 		var item pair
 		var projectID sql.NullString
-		if err = rows.Scan(&item.ID, &projectID); err != nil {
+		if err = rows.Scan(&item.ID, &projectID, &item.APIKeyID); err != nil {
 			rows.Close()
 			return 0, err
 		}
@@ -544,7 +558,7 @@ func reconcileGone(limit int) (int, error) {
 		go func(item pair) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			exists, checkErr := projectExists(item.ProjectID)
+			exists, checkErr := projectExists(item.ProjectID, tokenForDeployment(item.APIKeyID))
 			if checkErr != nil || exists == nil || *exists {
 				return
 			}
@@ -615,7 +629,7 @@ func sweepStale(limit int) (SweepResult, error) {
 	}
 
 	rows, err := db.QueryContext(ctx,
-		`SELECT id, vercel_project_id FROM deployments
+		`SELECT id, vercel_project_id, api_key_id FROM deployments
 		 WHERE status = 'deleting' ORDER BY created_at ASC LIMIT $1`, limit)
 	if err != nil {
 		return SweepResult{}, err
@@ -623,12 +637,13 @@ func sweepStale(limit int) (SweepResult, error) {
 	type pendingDeletion struct {
 		ID        string
 		ProjectID string
+		APIKeyID  sql.NullString
 	}
 	var pending []pendingDeletion
 	for rows.Next() {
 		var item pendingDeletion
 		var projectID sql.NullString
-		if err = rows.Scan(&item.ID, &projectID); err != nil {
+		if err = rows.Scan(&item.ID, &projectID, &item.APIKeyID); err != nil {
 			rows.Close()
 			return SweepResult{}, err
 		}
@@ -646,7 +661,7 @@ func sweepStale(limit int) (SweepResult, error) {
 	deleted := 0
 	for _, item := range pending {
 		if item.ProjectID != "" {
-			if err = deleteVercelProject(item.ProjectID); err != nil {
+			if err = deleteVercelProject(item.ProjectID, tokenForDeployment(item.APIKeyID)); err != nil {
 				continue
 			}
 		}

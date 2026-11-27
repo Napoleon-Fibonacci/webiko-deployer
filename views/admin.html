@@ -139,6 +139,59 @@
           {{end}}
 
           <p class="admin-note">Menghapus di sini ikut menghapus project-nya di Vercel, jadi URL-nya berhenti hidup dan slotnya bebas lagi. Situs yang lewat masa aktif {{ttlDays}} hari dipindahkan ke antrean hapus oleh sapuan harian.</p>
+
+          <section class="guide reveal" style="--d:400ms">
+            <h2 class="guide-title">{{icon "layers" 14 "text-faint"}} Kunci API Vercel</h2>
+            <p class="admin-note">Kunci dari banner donasi halaman depan menunggu di sini sebagai pending. Aktifkan untuk masuk pool deploy: kunci aktif dipakai bergiliran, yang paling jarang dipakai duluan. <code>VERCEL_TOKEN</code> tetap jadi cadangan saat pool kosong. Token disimpan terenkripsi; donor tetap kebal pergeseran slot dan TTL selama kuncinya aktif.</p>
+            {{if not .Keys}}
+              <p class="admin-empty">Belum ada kunci. Donasi lewat banner halaman depan, atau tambah manual di bawah.</p>
+            {{else}}
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Kunci</th>
+                      <th>Dipakai</th>
+                      <th>Donor</th>
+                      <th>Status</th>
+                      <th>Dibuat</th>
+                      <th><span class="sr-only">Aksi</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {{range $row := .Keys}}
+                      <tr>
+                        <td class="mono">{{$row.Label}}</td>
+                        <td>{{$row.Uses}}</td>
+                        <td class="text-muted">{{if $row.DonorOwnerID}}{{slice $row.DonorOwnerID 0 8}}…{{else}}—{{end}}</td>
+                        <td><span class="badge" data-s="{{if $row.Active}}active{{else}}pending{{end}}">{{if $row.Active}}Aktif{{else}}Menunggu{{end}}</span></td>
+                        <td class="text-faint">{{formatLong $row.CreatedAt}}</td>
+                        <td class="admin-cell-action">
+                          <form action="/api/admin/key/toggle" method="post" style="display:inline">
+                            <input type="hidden" name="id" value="{{$row.ID}}">
+                            <input type="hidden" name="active" value="{{$row.Active}}">
+                            <button class="btn-ghost" type="submit">{{if $row.Active}}Nonaktifkan{{else}}Aktifkan{{end}}</button>
+                          </form>
+                          <form action="/api/admin/key/delete" method="post" style="display:inline">
+                            <input type="hidden" name="id" value="{{$row.ID}}">
+                            <button class="icon-btn is-danger" type="submit" title="Hapus kunci" aria-label="Hapus kunci">{{icon "trash" 15 ""}}</button>
+                          </form>
+                        </td>
+                      </tr>
+                    {{end}}
+                  </tbody>
+                </table>
+              </div>
+            {{end}}
+            <form class="admin-search" method="post" action="/api/admin/key/add">
+              <div class="input-icon">
+                {{icon "file" 16 ""}}
+                <input class="input font-mono" type="password" name="apiKey" placeholder="Tempel kunci API Vercel untuk tambah manual" aria-label="Kunci API Vercel" maxlength="512" required>
+              </div>
+              <button class="btn-ghost" type="submit">Tambah manual</button>
+            </form>
+            <p class="admin-note">Hapus dulu project-nya lewat tabel Deployan, baru hapus kuncinya; situs aktif tanpa kunci tidak bisa dihapus otomatis. Situs donor tetap hidup sampai kuncinya dinonaktifkan atau dihapus.</p>
+          </section>
         {{end}}
       </div>
     </main>

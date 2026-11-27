@@ -22,6 +22,9 @@ deployments.go        Tabel deployments: slot, transisi, daftar admin, sapuan
 ratelimit.go          Kuota jendela tetap per scope + IP
 admin.go              Cookie sesi admin HMAC
 validate.go           Nama, path, ukuran, anti zip bomb
+donate.go             Banner donasi kunci API Vercel → Telegram
+pool.go               Pool kunci API Vercel terenkripsi (AES-GCM), picker
+keys.go               Menu kunci pool di dashboard admin
 db.go                 Koneksi Postgres (pgx)
 views.go / util.go    Template funcs, ikon SVG, format tanggal
 views/                index.html, admin.html, login.html
@@ -72,6 +75,9 @@ sesuai nomor urut. Migrasi aman diulang.
 | `CRON_SECRET` | tidak | Kalau diisi, cron memakai `Authorization: Bearer <secret>`. |
 | `SITE_URL` | tidak | URL publik. Di Vercel otomatis dari `VERCEL_PROJECT_PRODUCTION_URL`. |
 | `ADMIN_PASSWORD` | tidak | Kosong = menu `/admin` nonaktif. |
+| `TELEGRAM_BOT_TOKEN` | tidak | Bot token untuk banner donasi kunci API Vercel. |
+| `TELEGRAM_CHAT_ID` | tidak | Chat tujuan pesan donasi. Kosong = banner tidak tampil. |
+| `POOL_SECRET` | tidak | Kunci enkripsi pool kunci API Vercel. Kosong = fallback ke rahasia server lain. |
 
 ## Alur deploy
 
@@ -81,20 +87,29 @@ sesuai nomor urut. Migrasi aman diulang.
 2. Sumber ZIP/folder/ditempel dibungkus jadi satu ZIP di browser (fflate),
    lalu diunggah langsung ke Vercel Blob memakai token client. Ini yang membuat
    ZIP sampai 10 MB bisa lewat, di atas batas body request function Vercel.
-3. `POST /api/deploy` memeriksa `DEPLOY_ACCESS_CODE` lebih dulu bila diisi,
+3. Sumber boleh berisi folder `api/` untuk Serverless Function Vercel tanpa build (JS/TS); bahasa yang butuh build (Go, Python, Rust) tidak jalan karena tidak ada langkah build.
+4. `POST /api/deploy` memeriksa `DEPLOY_ACCESS_CODE` lebih dulu bila diisi,
    lalu memvalidasi isi ZIP (maks 100 file, 50 MB setelah ekstrak, wajib
    `index.html`), memesan slot, membuat deployment Vercel, dan mengalirkan
    progres NDJSON ke browser.
-4. Satu browser maksimal `MAX_SITES_PER_OWNER` situs aktif. Kalau kuota itu
+5. Satu browser maksimal `MAX_SITES_PER_OWNER` situs aktif. Kalau kuota itu
    penuh, situs tertua milik browser tersebut yang diganti. Kalau kapasitas
    global penuh, hanya situs berumur minimal `MIN_EVICT_HOURS` yang boleh
    digeser; kalau belum ada, deploy ditolak dengan pesan kapasitas.
-5. Project yang sudah hilang dari Vercel ditutup oleh sapuan harian
+6. Project yang sudah hilang dari Vercel ditutup oleh sapuan harian
    (`/api/cron/cleanup`).
 
 Batas: deploy 5/jam, upload 20/jam, login admin 10/15 menit, per IP. Selain
 itu server menolak deploy setelah `MAX_DEPLOYS_PER_DAY` reservasi dalam 24 jam
 bergulir, agar kuota deployment Vercel tidak habis oleh banyak pengunjung.
+
+Kalau `TELEGRAM_BOT_TOKEN` dan `TELEGRAM_CHAT_ID` diisi, halaman depan
+menampilkan banner donasi kunci API Vercel. Formulir menyimpan kunci sebagai
+pending terenkripsi + meneruskan ke bot Telegram pemilik (`POST /api/donate`).
+Pemilik mengaktifkan kunci dari dashboard `/admin`; kunci aktif dipakai
+bergiliran saat deploy (yang paling jarang dipakai duluan), dan situs donatur
+kebal pergeseran slot serta TTL. `VERCEL_TOKEN` tetap jadi cadangan saat pool
+kosong.
 
 ## Deploy ke Vercel
 

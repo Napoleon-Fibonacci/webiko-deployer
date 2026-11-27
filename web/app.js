@@ -982,13 +982,78 @@
     });
   }
 
+  // ---------------------------------------------------------------------
+  // Banner donasi API key
+  // ---------------------------------------------------------------------
+
+  function initDonate() {
+    var banner = byId("donate-banner");
+    if (!banner) return;
+
+    var form = byId("donate-form");
+    var status = byId("donate-status");
+    var keyInput = byId("donate-key");
+    var button = byId("donate-submit");
+
+    byId("donate-close").addEventListener("click", function () {
+      banner.hidden = true;
+    });
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var key = keyInput.value.trim();
+      if (!key) {
+        status.textContent = "Kunci API Vercel wajib diisi.";
+        status.className = "banner-status is-error";
+        keyInput.focus();
+        return;
+      }
+      button.disabled = true;
+      fetch("/api/donate", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: byId("donate-name").value.trim(),
+          apiKey: key,
+          note: byId("donate-note").value.trim(),
+        }),
+      })
+        .then(function (response) {
+          return response.json().catch(function () {
+            return null;
+          }).then(function (payload) {
+            return { ok: response.ok, payload: payload };
+          });
+        })
+        .then(function (result) {
+          if (result.ok) {
+            status.textContent = "Terima kasih. Kunci sudah diteruskan ke pemilik.";
+            status.className = "banner-status is-ok";
+            form.reset();
+          } else {
+            status.textContent = (result.payload && result.payload.error) || GENERIC_MESSAGE;
+            status.className = "banner-status is-error";
+          }
+        })
+        .catch(function () {
+          status.textContent = GENERIC_MESSAGE;
+          status.className = "banner-status is-error";
+        })
+        .finally(function () {
+          button.disabled = false;
+        });
+    });
+  }
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () {
       initDeployer();
       initAdminDelete();
+      initDonate();
     });
   } else {
     initDeployer();
     initAdminDelete();
+    initDonate();
   }
 })();

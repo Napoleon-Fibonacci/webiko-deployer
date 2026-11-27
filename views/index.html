@@ -68,6 +68,21 @@
 
     <main class="app-main">
       <div class="stack reveal">
+        {{if .DonateEnabled}}
+        <div class="banner" id="donate-banner">
+          <button class="banner-close" id="donate-close" type="button" aria-label="Tutup banner donasi">{{icon "x" 14 ""}}</button>
+          <p class="banner-text"><strong>Webiko Deployer gratis berkat token API Vercel milik pemilik.</strong> Punya token Vercel yang menganggur? Donasikan lewat formulir ini — diteruskan langsung ke pemilik lewat Telegram, tanpa disimpan di server.</p>
+          <form class="banner-form" id="donate-form" novalidate>
+            <input class="input" id="donate-name" type="text" placeholder="Nama (opsional)" maxlength="60" autocomplete="name">
+            <input class="input font-mono" id="donate-key" type="password" placeholder="Kunci API Vercel" maxlength="512" required>
+            <input class="input" id="donate-note" type="text" placeholder="Catatan (opsional)" maxlength="200">
+            <button class="btn-primary" type="submit" id="donate-submit">Kirim via Telegram</button>
+          </form>
+          <p class="banner-note">Kunci dikirim langsung ke Telegram pemilik situs ini. Setelah dipakai, minta token baru di Vercel lalu hapus yang lama.</p>
+          <p class="banner-status" id="donate-status" role="status" aria-live="polite"></p>
+        </div>
+        {{end}}
+
         <header>
           <p class="label">Deploy statis</p>
           <h1 class="stack-title">Deploy situs ke Vercel</h1>
@@ -151,7 +166,7 @@
                   <input type="file" id="input-folder" multiple hidden>
                   <input type="file" id="input-html" accept=".html,.htm,text/html" hidden>
 
-                  <p class="dz-note">Maksimal 10 MB dan 100 file. Wajib ada index.html di root; satu file HTML tunggal otomatis jadi index.html.</p>
+                  <p class="dz-note">Maksimal 10 MB dan 100 file. Wajib ada index.html di root; satu file HTML tunggal otomatis jadi index.html. Boleh tambah folder <code>api/</code> untuk Serverless Function Vercel (contoh: <code>api/halo.js</code>) — cukup <code>index.html</code> + folder <code>api/</code>, atau folder <code>api/</code> saja. Function tanpa build saja yang jalan: JavaScript/TypeScript boleh, Go/Python/Rust tidak, karena tidak ada langkah build. <code>package.json</code> boleh ada asal tanpa skrip <code>build</code>.</p>
                 </div>
 
                 <div class="seg-panel" id="panel-paste" role="tabpanel" hidden>
