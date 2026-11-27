@@ -71,6 +71,7 @@
           {{.Site.Name}}
         </a>
         <div class="appbar-side">
+          {{if .DonateEnabled}}<a class="btn-ghost" href="/donasi">{{icon "heart" 15 ""}} Donasi</a>{{end}}
           <div class="capacity{{if and .HasUsed (eq .Remaining 0)}} is-full{{end}}" title="{{if .HasUsed}}{{.Used}} dari {{.Max}} slot terpakai{{else}}Maksimal {{.Max}} project{{end}}; maksimal {{maxSitesPerOwner}} situs per browser">
             {{icon "layers" 14 ""}}
             {{if .HasUsed}}<span><strong>{{.Remaining}}</strong> slot tersisa</span>{{else}}<span>maks {{.Max}} project</span>{{end}}
